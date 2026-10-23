@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07161b">
+  <meta name="description" content="用交互示意学习半导体 PN 结、MOSFET 基础公式与 SI 单位。">
+  <title>P02 学习台｜半导体器件基础</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="page-shell" data-p02-root>
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-mark"></span> P02 · 器件物理入门</p>
+        <h1>先看见，再写公式。</h1>
+        <p class="hero-lede">把 PN 结、MOSFET 和单位换算拆成可以观察的关系。拖动滑块，看清每个变量改变了什么。</p>
+        <div class="hero-note"><span class="pulse-dot"></span><span>滑块用于概念示意；冻结参数下的解析模型数据由 P02 Python 脚本单独生成。</span></div>
+      </div>
+      <figure class="hero-figure" aria-label="半导体结区概念示意">
+        <div class="hero-figure-caption"><span>截面示意</span><span>p 型 · 耗尽区 · n 型</span></div>
+        <svg viewBox="0 0 560 230" role="img" aria-label="p 型与 n 型区域交界，中央耗尽区中标有固定电荷">
+          <rect x="16" y="44" width="250" height="142" fill="#552e3a"></rect>
+          <rect x="294" y="44" width="250" height="142" fill="#173d48"></rect>
+          <rect x="266" y="44" width="28" height="142" fill="#d7f1e7" opacity=".12"></rect>
+          <line x1="280" y1="38" x2="280" y2="194" stroke="#c9e8df" stroke-width="1" stroke-dasharray="4 5" opacity=".5"></line>
+          <text x="40" y="73" fill="#ff9d91" font-size="15" font-family="Arial">p-type · 空穴多数</text>
+          <text x="363" y="73" fill="#86dfd4" font-size="15" font-family="Arial">n-type · 电子多数</text>
+          <text x="280" y="211" text-anchor="middle" fill="#b9cbc7" font-size="12" font-family="Arial">耗尽区：自由载流子减少，固定离子留下</text>
+          <text x="176" y="126" fill="#ffc1b9" font-size="22" font-family="Arial">−   −   −</text>
+          <text x="311" y="126" fill="#b1f3e9" font-size="22" font-family="Arial">+   +   +</text>
+          <line x1="346" y1="157" x2="208" y2="157" stroke="#f5cd7c" stroke-width="2"></line>
+          <path d="M208 157 l10 -6 v12 z" fill="#f5cd7c"></path>
+          <text x="277" y="151" text-anchor="middle" fill="#f5cd7c" font-size="11" font-family="Arial">E 场</text>
+          <circle cx="86" cy="150" r="5" fill="#ffb5aa"></circle>
+          <circle cx="135" cy="99" r="4" fill="#ffb5aa"></circle>
+          <circle cx="455" cy="144" r="5" fill="#8febe0"></circle>
+          <circle cx="500" cy="105" r="4" fill="#8febe0"></circle>
+          <path d="M16 200 H544" stroke="#29434a" stroke-width="1"></path>
+        </svg>
+      </figure>
+    </header>
+
+    <nav class="lesson-nav" role="tablist" aria-label="学习内容">
+      <button class="lesson-tab is-active" id="tab-pn" role="tab" type="button" aria-selected="true" aria-controls="lesson-pn" data-tab="lesson-pn">
+        <span class="tab-number">01</span><span>PN 结</span><small>势垒与电流</small>
+      </button>
+      <button class="lesson-tab" id="tab-mos" role="tab" type="button" aria-selected="false" aria-controls="lesson-mos" data-tab="lesson-mos" tabindex="-1">
+        <span class="tab-number">02</span><span>MOSFET</span><small>栅控与沟道</small>
+      </button>
+      <button class="lesson-tab" id="tab-units" role="tab" type="button" aria-selected="false" aria-controls="lesson-units" data-tab="lesson-units" tabindex="-1">
+        <span class="tab-number">03</span><span>参数与单位</span><small>数量级与边界</small>
+      </button>
+    </nav>
+
+    <section class="lesson-panel is-active" id="lesson-pn" role="tabpanel" aria-labelledby="tab-pn">
+      <div class="section-heading">
+        <div><p class="section-kicker">从扩散到势垒</p><h2>PN 结：看见耗尽区在呼吸</h2></div>
+        <p>偏置电压不是“把电流推过一条线”这么简单。它会改变结区势垒，也改变自由载流子容易通过的程度。</p>
+      </div>
+      <div class="lesson-grid">
+        <div class="explain-column">
+          <div class="concept-copy">
+            <h3>先记住这条因果链</h3>
+            <ol class="causal-list">
+              <li><span>01</span><p>p、n 两侧载流子浓度不同，接触后发生扩散。</p></li>
+              <li><span>02</span><p>扩散留下固定离子，接缝附近形成电场与耗尽区。</p></li>
+              <li><span>03</span><p>反向偏置让耗尽区变宽；正向偏置让它变窄，势垒降低。</p></li>
+            </ol>
+            <p class="plain-note">热平衡时内部有电场，但两种方向的载流子运动互相抵消，因此外部净电流为零。</p>
+          </div>
+          <div class="thermal-guide" data-term-scope>
+            <div class="thermal-guide-heading">
+              <div>
+                <p class="equation-title">热电压：把热能刻度换成电压刻度</p>
+            <p class="equation"><button class="symbol" type="button" data-term="vthermal">V<sub>thermal</sub></button> = <button class="symbol" type="button" data-term="kb">k<sub>B</sub></button> · <button class="symbol" type="button" data-term="temperature">T</button> / <button class="symbol" type="button" data-term="q">q</button></p>
+              </div>
+              <span class="concept-tag">物理尺度，不是外加电压</span>
+            </div>
+            <p class="thermal-explanation">先看分子：k<sub>B</sub> × T 是随温度变化的热能尺度，单位为焦耳；再除以一个元电荷 q，就把“能量”换成等效电压。它不是接在二极管外面的电源。</p>
+            <div class="thermal-bridge" aria-label="玻尔兹曼常数乘绝对温度得到焦耳，再除以元电荷得到伏特">
+              <div class="thermal-node"><strong>k<sub>B</sub> × T</strong><span>热能刻度 · J</span></div>
+              <span class="thermal-divide">÷ q</span>
+              <div class="thermal-node thermal-node-result"><strong>V<sub>thermal</sub></strong><span>电压刻度 · J/C = V</span></div>
+            </div>
+            <div class="thermal-control">
+              <label for="thermal-temperature">绝对温度 T <output id="thermal-temp-value" for="thermal-temperature">300 K</output></label>
+              <input id="thermal-temperature" type="range" min="200" max="500" value="300" step="10" aria-describedby="thermal-help">
+              <div class="thermal-meter" role="meter" aria-label="热电压相对刻度，按温度成比例变化" aria-valuemin="0" aria-valuemax="500" aria-valuenow="300" aria-valuetext="300 K 时约 25.85 mV">
+                <span id="thermal-fill"></span>
+              </div>
+              <p class="thermal-result"><span>对应的热电压 V<sub>thermal</sub></span><output id="thermal-voltage" aria-live="polite">25.85 mV</output></p>
+            </div>
+            <p class="control-help" id="thermal-help">拖动温度，看 V<sub>thermal</sub> 随 T 成正比变化。200–500 K 是本概念控件的展示范围，不会改变固定在 300 K 的 P02-EDU-V1 模型结果。真实器件的完整温度行为还受本征载流子浓度、迁移率等影响。</p>
+            <div class="term-row"><button class="symbol" type="button" data-term="kb">k<sub>B</sub></button><button class="symbol" type="button" data-term="temperature">T</button><button class="symbol" type="button" data-term="q">q</button><button class="symbol" type="button" data-term="vthermal">V<sub>thermal</sub></button><span>点击符号查看英文全称、中文释义、单位与作用</span></div>
+            <div class="term-readout thermal-term-readout" data-term-output aria-live="polite"><strong>公式符号说明</strong><span>点击上方的 k<sub>B</sub>、T、q 或 V<sub>thermal</sub>，逐项查看英文全称、单位和它在关系式里的作用。</span></div>
+          </div>
+          <div class="equation-block">
+            <p class="equation-title">耗尽区宽度：偏置改变“坡”的范围</p>
+            <p class="equation" aria-label="耗尽区宽度公式">
+              <button class="symbol" type="button" data-term="wdep">W<sub>dep</sub></button> =
+              √[(2 <button class="symbol" type="button" data-term="epss">ε<sub>s</sub></button> /
+              <button class="symbol" type="button" data-term="q">q</button>)
+              (1/<button class="symbol" type="button" data-term="na">N<sub>A</sub></button> +
+              1/<button class="symbol" type="button" data-term="nd">N<sub>D</sub></button>)
+              (<button class="symbol" type="button" data-term="vbi">V<sub>bi</sub></button> −
+              <button class="symbol" type="button" data-term="va">V<sub>a</sub></button>)]
+            </p>
+            <div class="equation-foot"><span>反偏：V<sub>a</sub> &lt; 0 → 区域变宽</span><span>正偏：V<sub>a</sub> &gt; 0 → 区域变窄</span></div>
+          </div>
+          <div class="equation-block equation-compact">
+            <p class="equation-title">内建电势：接触后形成的内部势垒</p>
+            <p class="equation">
+              <button class="symbol" type="button" data-term="vbi">V<sub>bi</sub></button> =
+              <button class="symbol" type="button" data-term="vthermal">V<sub>thermal</sub></button> · ln(
+              <button class="symbol" type="button" data-term="na">N<sub>A</sub></button> ·
+              <button class="symbol" type="button" data-term="nd">N<sub>D</sub></button> /
+              <button class="symbol" type="button" data-term="ni">n<sub>i</sub></button><sup>2</sup>)
+            </p>
+            <p class="equation-small">ln 是 natural logarithm（自然对数）；括号中是无单位浓度比值。</p>
+          </div>
+          <div class="equation-block equation-compact">
+            <p class="equation-title">理想二极管 I–V：正向电流呈指数上升</p>
+            <p class="equation">
+              <button class="symbol" type="button" data-term="idiode">I<sub>diode</sub></button> =
+              <button class="symbol" type="button" data-term="is">I<sub>S</sub></button> {exp[
+              <button class="symbol" type="button" data-term="vi">V<sub>diode</sub></button> /
+              (<button class="symbol" type="button" data-term="ideality">n<sub>d</sub></button> ·
+              <button class="symbol" type="button" data-term="vthermal">V<sub>thermal</sub></button>)] − 1}
+            </p>
+            <div class="term-row">
+              <button class="symbol" type="button" data-term="is">I<sub>S</sub></button>
+              <button class="symbol" type="button" data-term="ideality">n<sub>d</sub></button>
+              <button class="symbol" type="button" data-term="vthermal">V<sub>thermal</sub></button>
+              <button class="symbol" type="button" data-term="vi">V<sub>diode</sub></button>
+              <span>点符号查看参数释义</span>
+            </div>
+            <div class="diode-derivation">
+              <p class="equation-title">常说的硅二极管约 0.7 V，怎样从方程估出来？</p>
+              <p class="diode-derivation-intro">上方是理想二极管 I–V 关系（Shockley diode equation，肖克利二极管方程）。两边先除以 I<sub>S</sub>、加 1，再取自然对数 ln（natural logarithm），即可从电流与器件参数反解端电压。</p>
+              <p class="equation diode-inverse-equation" aria-label="二极管电压等于理想因子乘热电压乘以一加电流与反向饱和电流之比的自然对数">
+                <button class="symbol" type="button" data-term="vi">V<sub>diode</sub></button> =
+                <button class="symbol" type="button" data-term="ideality">n<sub>d</sub></button> ·
+                <button class="symbol" type="button" data-term="vthermal">V<sub>thermal</sub></button> · ln(1 +
+                <button class="symbol" type="button" data-term="idiode">I<sub>diode</sub></button> /
+                <button class="symbol" type="button" data-term="is">I<sub>S</sub></button>)
+              </p>
+              <ol class="calculation-steps">
+                <li><span>1</span><p>在 <strong>300 K</strong> 下，热电压 V<sub>thermal</sub> = k<sub>B</sub>·T/q ≈ <strong>25.85 mV</strong> = 0.02585 V。</p></li>
+                <li><span>2</span><p>取一组便于演算的教学假设：n<sub>d</sub> = 1、正向电流 I<sub>diode</sub> = 1 mA、I<sub>S</sub> = 1×10<sup>−15</sup> A。</p></li>
+                <li><span>3</span><p>I<sub>diode</sub>/I<sub>S</sub> = 10<sup>12</sup>，ln(1 + 10<sup>12</sup>) ≈ 27.63，因此 V<sub>diode</sub> ≈ 1 × 0.02585 × 27.63 = <strong>0.714 V</strong>，保留一位小数就是约 0.7 V。</p></li>
+              </ol>
+              <div class="diode-controls" aria-label="理想二极管电压估算参数">
+                <label for="diode-current"><span class="diode-field-title"><span class="diode-field-name">正向电流</span><span class="diode-field-meta"><span class="diode-symbol">I<sub>diode</sub></span><span>（mA）</span></span></span>
+                  <input id="diode-current" type="number" min="0.000001" max="1000" step="any" value="1" inputmode="decimal">
+                </label>
+                <label for="diode-saturation-current"><span class="diode-field-title"><span class="diode-field-name">反向饱和电流</span><span class="diode-field-meta"><span class="diode-symbol">I<sub>S</sub></span><span>（A）</span></span></span>
+                  <input id="diode-saturation-current" type="number" min="1e-30" max="0.001" step="any" value="1e-15" inputmode="decimal">
+                </label>
+                <label for="diode-ideality"><span class="diode-field-title"><span class="diode-field-name">二极管理想因子</span><span class="diode-field-meta"><span class="diode-symbol">n<sub>d</sub></span></span></span>
+                  <input id="diode-ideality" type="number" min="0.1" max="3" step="0.1" value="1" inputmode="decimal">
+                </label>
+              </div>
+              <p class="diode-temp-note">初始温度为 300 K；温度与上方热电压滑块联动。</p>
+              <div class="diode-live-result">
+                <div><span>按当前输入估算的正向端电压</span><output id="diode-voltage-result" aria-live="polite">0.714 V</output></div>
+                <p>代入计算：<span id="diode-calculation">1.00 × 25.85 mV × ln(1 + 1.00e+12) = 0.714 V</span></p>
+              </div>
+              <p class="diode-model-note">0.7 V 不是 PN 结固定不变的“开启电压”。它是某些硅二极管在特定电流、温度和器件参数下的近似正向压降；这里的 I<sub>S</sub> 是演示用假设，不是实测值。真实器件还会受温度、串联电阻及其它非理想效应影响，本算例不能用于产品预测。</p>
+              <p class="diode-source">公式依据：<a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec06/" target="_blank" rel="noopener noreferrer">MIT OCW 6.012 Lecture 6：p-n Junctions: I-V Relationship</a>。本页面仅做理想方程的代数演示。</p>
+            </div>
+          </div>
+          <div class="term-readout" data-term-output aria-live="polite"><strong>符号说明</strong><span>点击公式里的符号，可查看英文全称、中文解释、单位和它在公式中的作用。</span></div>
+        </div>
+
+        <div class="visual-column">
+          <div class="visual-panel">
+            <div class="visual-topline"><span>可交互剖面</span><span class="concept-tag">概念示意</span></div>
+            <svg class="pn-diagram" viewBox="0 0 600 300" role="img" aria-label="交互式 PN 结截面示意图">
+              <rect x="20" y="45" width="280" height="188" fill="#512c37"></rect>
+              <rect x="300" y="45" width="280" height="188" fill="#153945"></rect>
+              <rect id="pn-depletion" x="240" y="45" width="120" height="188" fill="#d4e9dd" opacity=".16"></rect>
+              <line x1="300" y1="38" x2="300" y2="244" stroke="#d8ece5" stroke-dasharray="4 5" opacity=".45"></line>
+              <text x="45" y="78" fill="#ffab9f" font-size="17" font-family="Arial">p 型</text>
+              <text x="518" y="78" text-anchor="end" fill="#91e5db" font-size="17" font-family="Arial">n 型</text>
+              <text id="pn-depletion-label" x="300" y="101" text-anchor="middle" fill="#deeee5" font-size="12" font-family="Arial">耗尽区</text>
+              <g id="pn-charges-left" aria-hidden="true" fill="#ffc2b8" font-size="14" font-family="Arial" text-anchor="middle">
+                <text x="276" y="157">−</text><text x="285" y="157">−</text><text x="294" y="157">−</text>
+              </g>
+              <g id="pn-charges-right" aria-hidden="true" fill="#aaf1e7" font-size="14" font-family="Arial" text-anchor="middle">
+                <text x="306" y="157">+</text><text x="315" y="157">+</text><text x="324" y="157">+</text>
+              </g>
+              <line x1="345" y1="197" x2="255" y2="197" stroke="#f3ca78" stroke-width="2"></line>
+              <path d="M255 197 l10 -6 v12 z" fill="#f3ca78"></path>
+              <text x="300" y="190" text-anchor="middle" fill="#f3ca78" font-size="11" font-family="Arial">电场 E</text>
+              <circle class="pn-carrier hole-dot" cx="92" cy="132" r="6"></circle>
+              <circle class="pn-carrier hole-dot" cx="145" cy="187" r="5"></circle>
+              <circle class="pn-carrier electron-dot" cx="465" cy="128" r="6"></circle>
+              <circle class="pn-carrier electron-dot" cx="515" cy="188" r="5"></circle>
+              <text x="300" y="265" text-anchor="middle" fill="#a9bfbb" font-size="12" font-family="Arial">固定离子与电场的方向示意</text>
+              <line x1="20" y1="238" x2="580" y2="238" stroke="#31505a"></line>
+            </svg>
+            <div class="bias-control">
+              <label for="pn-bias">偏置方向 / 强度 <output id="pn-bias-value" for="pn-bias">平衡点</output></label>
+              <input id="pn-bias" type="range" min="-100" max="100" value="0" step="1" aria-describedby="pn-slider-help">
+              <div class="range-ends"><span>反向偏置</span><span>热平衡</span><span>正向偏置</span></div>
+              <p class="control-help" id="pn-slider-help">滑块是相对概念刻度，不是伏特值。动画只展示公式指向的宽窄趋势。</p>
+            </div>
+            <div class="state-readout" aria-live="polite"><span class="state-indicator" id="pn-state-dot"></span><p id="pn-state-text">热平衡：内建势垒存在，外部净电流为零。</p></div>
+            <div class="bias-explainer">
+              <p class="equation-title">偏置是什么意思？先看电源正负极接在哪里</p>
+              <p class="bias-definition">Applied junction voltage（外加结电压）约定为 V<sub>a</sub> = V<sub>p</sub> − V<sub>n</sub>，也就是 p 侧电势减去 n 侧电势。正负号表示偏置方向；滑块只表达方向与趋势，不对应某个实际伏特数。</p>
+              <div class="bias-comparison">
+                <section class="bias-mode" aria-label="正向偏置接法与效果">
+                  <h4>Forward bias（正向偏置）</h4>
+                  <div class="bias-scheme" role="img" aria-label="电源正极接 p 型一侧，n 型一侧接负极，耗尽区较窄">
+                    <span class="bias-terminal is-positive">+</span><span class="bias-region is-p">p 型</span><span class="bias-depletion is-narrow"></span><span class="bias-region is-n">n 型</span><span class="bias-terminal is-negative">−</span>
+                  </div>
+                  <p>正极接 p 侧、负极接 n 侧。外加电场抵消部分内建电场（built-in electric field），使结区势垒（junction barrier）约降为 V<sub>bi</sub> − V<sub>a</sub>；耗尽区（depletion region）变窄，载流子注入（carrier injection）增强。</p>
+                </section>
+                <section class="bias-mode" aria-label="反向偏置接法与效果">
+                  <h4>Reverse bias（反向偏置）</h4>
+                  <div class="bias-scheme" role="img" aria-label="电源负极接 p 型一侧，n 型一侧接正极，耗尽区较宽">
+                    <span class="bias-terminal is-negative">−</span><span class="bias-region is-p">p 型</span><span class="bias-depletion is-wide"></span><span class="bias-region is-n">n 型</span><span class="bias-terminal is-positive">+</span>
+                  </div>
+                  <p>负极接 p 侧、正极接 n 侧。外加电场增强结区电场，势垒升高、耗尽区（depletion region）变宽；仍可能有很小的反向漏电流（reverse leakage current），强反偏还可能发生击穿（breakdown），本页未模拟击穿。</p>
+                </section>
+              </div>
+              <p class="bias-source">接线与耗尽区示意参考：<a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec04/" target="_blank" rel="noopener noreferrer">MIT OCW 6.012 Lecture 4：p-n Junctions: Electrostatics</a>。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lesson-panel" id="lesson-mos" role="tabpanel" aria-labelledby="tab-mos" hidden>
+      <div class="section-heading">
+        <div><p class="section-kicker">从电场到沟道</p><h2>MOSFET：栅压先开出一条路</h2></div>
+        <p>栅极隔着氧化层改变表面电荷。沟道建立后，漏—源电压驱动电子流动；沟道状态决定电流关系。</p>
+      </div>
+      <div class="lesson-grid">
+        <div class="explain-column">
+          <div class="concept-copy">
+            <h3>把它想成电场水闸</h3>
+            <ol class="causal-list">
+              <li><span>01</span><p>正栅压把电子吸引到 p 型衬底表面。</p></li>
+              <li><span>02</span><p>栅压超过阈值后，表面形成连接源极与漏极的反型沟道。</p></li>
+              <li><span>03</span><p>漏压增大到过驱动电压附近，漏端沟道变薄并进入饱和区。</p></li>
+            </ol>
+            <p class="plain-note">夹断不是击穿。理想长沟道模型中，夹断后电流近似饱和；真实器件还有其它效应。</p>
+          </div>
+          <div class="equation-block">
+            <p class="equation-title">先看“栅压超出门槛多少”</p>
+            <p class="equation"><button class="symbol" type="button" data-term="vov">V<sub>OV</sub></button> =
+              <button class="symbol" type="button" data-term="vgs">V<sub>GS</sub></button> −
+              <button class="symbol" type="button" data-term="vth">V<sub>th</sub></button>
+            </p>
+            <div class="term-row"><button class="symbol" type="button" data-term="cox">C<sub>ox</sub></button><button class="symbol" type="button" data-term="mu">μ<sub>n</sub></button><button class="symbol" type="button" data-term="geometry">W<sub>ch</sub> / L<sub>ch</sub></button><span>点符号查看参数释义</span></div>
+          </div>
+          <div class="equation-block equation-compact">
+            <p class="equation-title">栅氧耦合与阈值：电场怎样转成表面电荷</p>
+            <p class="equation">
+              <button class="symbol" type="button" data-term="cox">C<sub>ox</sub></button> =
+              <button class="symbol" type="button" data-term="epsox">ε<sub>ox</sub></button> /
+              <button class="symbol" type="button" data-term="tox">t<sub>ox</sub></button>
+            </p>
+            <p class="equation-small">
+              <button class="symbol" type="button" data-term="vth">V<sub>th</sub></button> =
+              <button class="symbol" type="button" data-term="vfb">V<sub>FB</sub></button> + 2
+              <button class="symbol" type="button" data-term="phif">φ<sub>F</sub></button> +
+              √(4<button class="symbol" type="button" data-term="q">q</button>
+              <button class="symbol" type="button" data-term="epss">ε<sub>s</sub></button>
+              <button class="symbol" type="button" data-term="na">N<sub>A</sub></button>
+              <button class="symbol" type="button" data-term="phif">φ<sub>F</sub></button>) /
+              <button class="symbol" type="button" data-term="cox">C<sub>ox</sub></button>
+            </p>
+            <p class="equation-small">阈值式采用 V<sub>SB</sub>=0、长沟道和特定强反型定义；界面与工艺效应未纳入。</p>
+          </div>
+          <div class="equation-block equation-compact">
+            <p class="equation-title">长沟道平方律：分区写电流</p>
+            <p class="equation"><b>线性区：</b>
+              <button class="symbol" type="button" data-term="id">I<sub>D</sub></button> =
+              <button class="symbol" type="button" data-term="beta">β</button>[
+              <button class="symbol" type="button" data-term="vov">V<sub>OV</sub></button>·
+              <button class="symbol" type="button" data-term="vds">V<sub>DS</sub></button> −
+              <button class="symbol" type="button" data-term="vds">V<sub>DS</sub></button><sup>2</sup>/2]</p>
+            <p class="equation"><b>饱和区：</b>
+              <button class="symbol" type="button" data-term="id">I<sub>D</sub></button> =
+              (<button class="symbol" type="button" data-term="beta">β</button>/2)
+              <button class="symbol" type="button" data-term="vov">V<sub>OV</sub></button><sup>2</sup></p>
+            <p class="equation-small">β = μ<sub>n</sub> · C<sub>ox</sub> · (W<sub>ch</sub>/L<sub>ch</sub>)，V<sub>DS</sub> 与 V<sub>OV</sub> 比较用来判断工作区。</p>
+          </div>
+          <div class="term-readout" data-term-output aria-live="polite"><strong>符号说明</strong><span>点击公式里的符号，可查看英文全称、中文解释、单位和它在公式中的作用。</span></div>
+        </div>
+
+        <div class="visual-column">
+          <div class="visual-panel">
+            <div class="visual-topline"><span>栅极控制截面</span><span class="concept-tag">长沟道示意</span></div>
+            <svg class="mos-diagram" viewBox="0 0 600 300" role="img" aria-label="MOSFET 截面示意，栅极下方显示可变沟道">
+              <rect x="22" y="120" width="556" height="130" fill="#28273f"></rect>
+              <text x="38" y="224" fill="#c4b8e8" font-size="14" font-family="Arial">p 型衬底 / Body</text>
+              <rect x="92" y="120" width="92" height="67" fill="#245169"></rect>
+              <rect x="416" y="120" width="92" height="67" fill="#245169"></rect>
+              <text x="138" y="160" text-anchor="middle" fill="#a8e9ef" font-size="14" font-family="Arial">源极 S</text>
+              <text x="462" y="160" text-anchor="middle" fill="#a8e9ef" font-size="14" font-family="Arial">漏极 D</text>
+              <rect x="199" y="48" width="202" height="50" fill="#314956" stroke="#8fe6d9" stroke-width="1.5"></rect>
+              <text x="300" y="79" text-anchor="middle" fill="#e3f2ec" font-size="15" font-family="Arial">栅极 G</text>
+              <rect x="199" y="100" width="202" height="11" fill="#f0ca80"></rect>
+              <text x="300" y="27" text-anchor="middle" fill="#aebfbb" font-size="12" font-family="Arial">V<tspan baseline-shift="sub" font-size="9">GS</tspan> 控制表面电荷</text>
+              <line x1="400" y1="105" x2="414" y2="105" stroke="#f7d68d" stroke-width="1"></line>
+              <text x="420" y="109" text-anchor="start" fill="#f7d68d" font-size="11" font-family="Arial">栅氧层</text>
+              <polygon id="mos-channel" points="184,119 416,119 416,127 184,127" fill="#73ddd0" opacity=".9"></polygon>
+              <g id="mos-electrons" fill="#e6fff8">
+                <circle class="electron-flow" cx="211" cy="122" r="4"></circle>
+                <circle class="electron-flow delay-1" cx="266" cy="122" r="4"></circle>
+                <circle class="electron-flow delay-2" cx="321" cy="122" r="4"></circle>
+                <circle class="electron-flow delay-3" cx="376" cy="122" r="4"></circle>
+              </g>
+              <line x1="188" y1="196" x2="412" y2="196" stroke="#86d9ce" stroke-width="1" marker-end="url(#mos-arrow)"></line>
+              <defs><marker id="mos-arrow" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#86d9ce"></path></marker></defs>
+              <text x="300" y="216" text-anchor="middle" fill="#a7cbc4" font-size="11" font-family="Arial">电子由源极向漏极移动</text>
+              <line x1="22" y1="250" x2="578" y2="250" stroke="#39425a"></line>
+            </svg>
+            <div class="mos-controls">
+              <label for="mos-vov">过驱动 V<sub>OV</sub> <output id="mos-vov-value" for="mos-vov">1.0 V（教学刻度）</output></label>
+              <input id="mos-vov" type="range" min="0" max="2" value="1" step="0.1">
+              <label for="mos-vds">漏—源电压 V<sub>DS</sub> <output id="mos-vds-value" for="mos-vds">0.4 V（教学刻度）</output></label>
+              <input id="mos-vds" type="range" min="0" max="2" value="0.4" step="0.1">
+              <p class="control-help">数值仅供操控公式示意；迁移率、氧化层和沟道几何尚未代入，因此不显示安培值。</p>
+            </div>
+            <div class="mos-result">
+              <div class="region-state" aria-live="polite"><span class="state-indicator" id="mos-state-dot"></span><p id="mos-state-text">线性区：沟道贯通，漏压增加会提高电流。</p></div>
+              <div class="mini-chart-wrap">
+                <div class="mini-chart-title"><span>归一化电流趋势</span><span>I<sub>D</sub> / I<sub>D,sat</sub></span></div>
+                <svg class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="长沟道 MOSFET 漏极电流随漏源电压先上升后饱和的示意曲线">
+                  <line x1="38" y1="118" x2="302" y2="118" stroke="#60777c"></line>
+                  <line x1="38" y1="118" x2="38" y2="14" stroke="#60777c"></line>
+                  <path id="mos-curve" d="" fill="none" stroke="#7ce2d4" stroke-width="3"></path>
+                  <circle id="mos-curve-point" cx="38" cy="118" r="5" fill="#ffd17f"></circle>
+                  <text x="165" y="143" text-anchor="middle" fill="#96aaa7" font-size="11" font-family="Arial">V<tspan baseline-shift="sub" font-size="8">DS</tspan> →</text>
+                  <text x="12" y="20" fill="#96aaa7" font-size="10" font-family="Arial">1</text>
+                  <text x="21" y="120" fill="#96aaa7" font-size="10" font-family="Arial">0</text>
+                </svg>
+                <p class="chart-note">比例曲线来自长沟道分段公式的归一化关系，不代表真实器件曲线。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lesson-panel" id="lesson-units" role="tabpanel" aria-labelledby="tab-units" hidden>
+      <div class="section-heading">
+        <div><p class="section-kicker">从单位读出数量级</p><h2>参数与单位：先把数字放到正确的尺子上</h2></div>
+        <p>半导体资料常混用 cm、μm、cm⁻³ 和 SI 单位。公式本身可能没错，单位一旦混了，结果就会差几个数量级。</p>
+      </div>
+      <div class="unit-layout">
+        <div class="unit-converter visual-panel">
+          <div class="visual-topline"><span>即时单位换算</span><span class="concept-tag">确定性换算</span></div>
+          <label for="unit-kind">选择量纲</label>
+          <select id="unit-kind">
+            <option value="concentration">掺杂浓度：cm⁻³ → m⁻³</option>
+            <option value="mobility">迁移率：cm²/(V·s) → m²/(V·s)</option>
+            <option value="diffusion">扩散系数：cm²/s → m²/s</option>
+            <option value="length">长度：μm → m</option>
+            <option value="oxide">厚度：nm → m</option>
+            <option value="area">面积：cm² → m²</option>
+            <option value="energy">能量：eV → J</option>
+            <option value="temperature">温度：°C → K</option>
+          </select>
+          <label for="unit-input">输入数值 <span class="unit-hint" id="unit-from">单位：cm⁻³</span></label>
+          <input id="unit-input" type="number" step="any" value="1e15">
+          <div class="conversion-arrow"><span id="unit-rule">× 10⁶</span><span aria-hidden="true">↓</span></div>
+          <div class="conversion-result"><small>统一单位结果</small><output id="unit-result" aria-live="polite">1.000e+21 m⁻³</output><span class="result-unit" id="unit-to">m⁻³</span></div>
+          <p class="control-help" id="unit-explanation">每立方厘米的数量换算为每立方米，数值乘 10⁶。</p>
+        </div>
+        <div class="unit-side">
+          <div class="concept-copy">
+            <h3>为什么浓度要乘 10⁶？</h3>
+            <p>1 cm³ 只有 10⁻⁶ m³ 那么大。每立方厘米装得下的粒子数，换成“每立方米”时，要用更大的体积去数，因此数值变大 10⁶ 倍。</p>
+            <div class="conversion-chain"><span>1 cm</span><b>=</b><span>10⁻² m</span><b>→</b><span>1 cm³</span><b>=</b><span>10⁻⁶ m³</span></div>
+            <div class="result-highlight">因此：1 cm⁻³ = 10⁶ m⁻³</div>
+          </div>
+          <div class="equation-block">
+            <p class="equation-title">公式的“语法检查”</p>
+            <ul class="check-list">
+              <li>ln(·)、exp(·) 里的数必须无单位。</li>
+              <li>根号里不能出现负值，且结果单位要对得上。</li>
+              <li>相对介电常数 ε<sub>r</sub> 无单位；介电率 ε 才是 F/m。</li>
+              <li>C<sub>ox</sub> 是单位面积电容 F/m²，不是器件总电容。</li>
+              <li>热电压 V<sub>thermal</sub> ≠ 阈值电压 V<sub>th</sub>。</li>
+            </ul>
+          </div>
+          <div class="term-readout" data-term-output aria-live="polite"><strong>参数来源也要分类</strong><span>常数、材料参考值、论文/数据手册参数和教学假设不是同一类证据。请在讲义中查看完整术语表与模型边界。</span></div>
+        </div>
+      </div>
+
+      <details class="glossary">
+        <summary>展开术语表：英文全称、中文释义与项目用途</summary>
+        <div class="glossary-table-wrap">
+          <table>
+            <thead><tr><th>缩写</th><th>英文全称</th><th>中文释义 / 在本项目里的意思</th></tr></thead>
+            <tbody>
+              <tr><td>PN junction</td><td>p-type–n-type junction</td><td>p 型和 n 型半导体形成的结，附近产生耗尽区。</td></tr>
+              <tr><td>MOS</td><td>Metal–Oxide–Semiconductor</td><td>金属—氧化物—半导体结构，是栅极控制的基础。</td></tr>
+              <tr><td>MOSFET</td><td>Metal–Oxide–Semiconductor Field-Effect Transistor</td><td>金属—氧化物—半导体场效应晶体管。</td></tr>
+              <tr><td>nMOS / NMOS</td><td>n-channel Metal–Oxide–Semiconductor Field-Effect Transistor</td><td>n 沟道 MOSFET；主要由电子在沟道中导电。</td></tr>
+              <tr><td>I–V</td><td>Current–Voltage characteristic</td><td>电流—电压特性，观察端口电压如何影响电流。</td></tr>
+              <tr><td>SI</td><td>International System of Units</td><td>国际单位制；后续代码内部统一单位体系。</td></tr>
+              <tr><td>DA</td><td>Depletion Approximation</td><td>耗尽近似；简化耗尽区内自由载流子分布。</td></tr>
+              <tr><td>GCA</td><td>Gradual Channel Approximation</td><td>渐变沟道近似；推导长沟道 MOSFET 电流的假设。</td></tr>
+              <tr><td>TCAD</td><td>Technology Computer-Aided Design</td><td>工艺/器件计算机辅助设计；本页并未执行 TCAD。</td></tr>
+              <tr><td>V<sub>bi</sub></td><td>Built-in potential</td><td>内建电势；PN 结内部势垒电压。</td></tr>
+              <tr><td>V<sub>th</sub></td><td>Threshold voltage</td><td>阈值电压；nMOS 强反型沟道形成的近似门槛。</td></tr>
+              <tr><td>V<sub>thermal</sub></td><td>Thermal voltage</td><td>热电压；热能尺度换算出的电压，不是 V<sub>th</sub>。</td></tr>
+              <tr><td>k<sub>B</sub></td><td>Boltzmann constant</td><td>玻尔兹曼常数；单位 J/K，把温度换成热能尺度。</td></tr>
+              <tr><td>T</td><td>Thermodynamic temperature (absolute temperature)</td><td>热力学温度/绝对温度，单位 K；不可把摄氏度直接代入。</td></tr>
+              <tr><td>q</td><td>Elementary charge</td><td>元电荷量正值，单位 C；电子电荷为 −q。</td></tr>
+              <tr><td>V<sub>OV</sub></td><td>Overdrive voltage</td><td>过驱动电压；V<sub>GS</sub> 超过 V<sub>th</sub> 的余量。</td></tr>
+              <tr><td>C<sub>ox</sub></td><td>Oxide capacitance per unit area</td><td>单位面积栅氧电容，衡量栅对沟道的电容耦合。</td></tr>
+              <tr><td>I<sub>D</sub></td><td>Drain current</td><td>漏极电流；MOSFET 沟道电流。</td></tr>
+              <tr><td>I<sub>S</sub></td><td>Reverse saturation current</td><td>反向饱和电流；理想二极管方程中的尺度量。</td></tr>
+              <tr><td>N<sub>A</sub> / N<sub>D</sub></td><td>Acceptor / Donor concentration</td><td>受主/施主浓度；分别对应 p 侧和 n 侧掺杂。</td></tr>
+              <tr><td>n<sub>i</sub></td><td>Intrinsic carrier concentration</td><td>本征载流子浓度；载流子统计的材料基准量。</td></tr>
+              <tr><td>NIST</td><td>National Institute of Standards and Technology</td><td>美国国家标准与技术研究院；常数来源机构。</td></tr>
+              <tr><td>CODATA</td><td>Committee on Data of the International Science Council</td><td>国际科学理事会数据委员会；推荐物理常数数据。</td></tr>
+              <tr><td>COMSOL</td><td>COMSOL Multiphysics</td><td>多物理场仿真软件名称；页面没有使用它做求解。</td></tr>
+              <tr><td>eV</td><td>Electronvolt</td><td>电子伏特，能量单位；不等于电压单位 V。</td></tr>
+              <tr><td>mV</td><td>millivolt</td><td>毫伏；1 mV = 10⁻³ V。</td></tr>
+              <tr><td>K</td><td>kelvin</td><td>开尔文；热力学温度单位。</td></tr>
+              <tr><td>J</td><td>joule</td><td>焦耳；能量单位。</td></tr>
+              <tr><td>C</td><td>coulomb</td><td>库仑；电荷单位。</td></tr>
+              <tr><td>V</td><td>volt</td><td>伏特；电势差/电压单位。</td></tr>
+              <tr><td>SiC</td><td>Silicon Carbide</td><td>碳化硅；P02 方向背景材料，此讲义仍讲硅基础方程。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <footer class="page-footer">
+      <p>教学底稿：P02 / 第一步｜方程来源见项目技术表</p>
+      <button class="doc-trigger" type="button" data-doc-src="docs/equation_source_table.html" data-doc-title="方程与单位来源表">查看方程与单位来源表</button>
+      <button class="doc-trigger" type="button" data-doc-src="docs/first_step_handout.html" data-doc-title="完整初学者讲义">阅读完整初学者讲义</button>
+    </footer>
+  </main>
+  <dialog class="doc-dialog" id="document-dialog" aria-labelledby="document-dialog-title">
+    <div class="doc-dialog-shell">
+      <header class="doc-dialog-header">
+        <h2 id="document-dialog-title">文档预览</h2>
+        <button class="doc-dialog-close" type="button" data-close-document aria-label="关闭文档预览">关闭</button>
+      </header>
+      <iframe class="doc-dialog-frame" id="document-frame" title="排版后的文档内容" sandbox="allow-same-origin"></iframe>
+    </div>
+  </dialog>
+</body>
+</html>

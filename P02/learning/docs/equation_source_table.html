@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P02｜方程与单位来源表</title>
+  <style>
+:root { color-scheme: light; --paper: #f3f1e9; --ink: #183037; --muted: #536c70;
+  --line: #c8d2cd; --accent: #087c74; --amber: #946719; }
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.72 "Segoe UI", "Microsoft YaHei", sans-serif; }
+main { width: min(860px, calc(100% - 40px)); margin: 0 auto; padding: 36px 0 64px;
+  overflow-wrap: anywhere; }
+h1, h2, h3, h4 { color: #102a30; line-height: 1.35; }
+h1 { margin: 0 0 24px; padding-bottom: 16px; border-bottom: 2px solid var(--accent);
+  font-size: clamp(1.7rem, 4vw, 2.3rem); }
+h2 { margin-top: 2.2em; padding-bottom: .35em; border-bottom: 1px solid var(--line);
+  font-size: 1.45rem; }
+h3 { margin-top: 1.7em; font-size: 1.15rem; }
+p, li { max-width: 78ch; }
+a { color: #076a65; text-underline-offset: 3px; }
+strong { color: #243a35; }
+blockquote { margin: 1.2em 0; padding: 12px 18px; border-left: 3px solid var(--amber);
+  background: #e8e7dc; color: #3f5555; }
+code { padding: .12em .35em; background: #e3e8e2; color: #18474a;
+  font: .9em/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; }
+code sub, code sup { font: inherit; font-size: .72em; line-height: 0; }
+code sub { vertical-align: sub; }
+code sup { vertical-align: super; }
+pre { overflow-x: auto; padding: 16px; background: #172e32; color: #e9f0e8; }
+pre code { padding: 0; background: transparent; color: inherit; }
+table { width: 100%; min-width: 680px; margin: 18px 0 26px; border-collapse: collapse;
+  font-size: .92rem; }
+th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left;
+  vertical-align: top; }
+th { background: #dfe8e1; color: #183e40; }
+tr:nth-child(even) td { background: rgba(222, 230, 220, .48); }
+hr { margin: 2em 0; border: 0; border-top: 1px solid var(--line); }
+img { max-width: 100%; height: auto; }
+@media (max-width: 600px) {
+  main { width: min(100% - 28px, 860px); padding-top: 22px; }
+  body { font-size: 15px; }
+  th, td { padding: 8px; }
+}
+</style>
+</head>
+<body><main><h1 id="p02-1">P02｜方程与单位来源表（第 1 步）</h1>
+<p><strong>状态：已完成方程框架、符号定义、单位规范及可追溯资料映射。</strong>
+<strong>后续状态更新（2026-10-23）：</strong>第一版教学参数已冻结为 <code>P02-EDU-V1</code>；最小解析模型、CSV/图表生成及自动检查已实现。冻结细节见 <code><i>model</i><sub>parameters</sub>_v1.md</code>，运行结果见 <code><i>results</i><sub>v1</sub>.md</code>。<strong>
+</strong>核验日期：2026-10-21。**</p>
+<h2 id="1">1. 这一步在做什么</h2>
+<p>我们先把“准备计算什么、公式从哪里来、每个量用什么单位”写清楚，再动手编程。这样可以避免常见错误：把 cm⁻³ 和 m⁻³ 混用、把热电压和 MOSFET 阈值电压都叫 <code><i>V</i><sub>T</sub></code>、把课堂模型误说成产品模型，或把仿真结果误当成实测数据。</p>
+<p>本项目的第一版范围是：</p>
+<ul>
+<li>一个<strong>硅（Si）PN 结二极管解析教学模型</strong>；</li>
+<li>一个<strong>硅基 n 沟道、长沟道增强型 MOSFET（Metal–Oxide–Semiconductor Field-Effect Transistor，金属—氧化物—半导体场效应晶体管）解析教学模型</strong>；</li>
+<li>不是 SiC MOSFET 专用模型、不是 TCAD（Technology Computer-Aided Design，工艺/器件计算机辅助设计）模型、不是 COMSOL 半导体输运求解，也不是任何真实产品的拟合模型。</li>
+</ul>
+<p>“长沟道”是说模型把沟道看成相对较长，足以先忽略短沟道效应；“增强型”表示栅压达到阈值后，才形成可导电的反型沟道。PN 结和 MOSFET 是两种不同器件；先学它们的基础方程，后续才更容易理解 SiC MOSFET。</p>
+<h2 id="2">2. 初学者先认识的词</h2>
+<table>
+<thead>
+<tr>
+<th>术语/缩写</th>
+<th>英文全称</th>
+<th>中文释义</th>
+<th>在本项目里的意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PN 结 / p–n junction</td>
+<td>p-type–n-type junction</td>
+<td>p 型半导体与 n 型半导体形成的结</td>
+<td>一侧以空穴为多数载流子，另一侧以电子为多数载流子；交界附近形成耗尽区和内建电场。</td>
+</tr>
+<tr>
+<td>MOS</td>
+<td>Metal–Oxide–Semiconductor</td>
+<td>金属—氧化物—半导体结构</td>
+<td>MOSFET 栅极控制沟道的基本叠层结构。</td>
+</tr>
+<tr>
+<td>MOSFET</td>
+<td>Metal–Oxide–Semiconductor Field-Effect Transistor</td>
+<td>金属—氧化物—半导体场效应晶体管</td>
+<td>用栅极电场控制源极和漏极之间电流的器件。</td>
+</tr>
+<tr>
+<td>I–V</td>
+<td>Current–Voltage characteristic</td>
+<td>电流—电压特性</td>
+<td>改变端口电压并观察模型电流如何变化的曲线。</td>
+</tr>
+<tr>
+<td>SI</td>
+<td>International System of Units</td>
+<td>国际单位制</td>
+<td>本项目代码统一采用米、秒、千克、安培、开尔文、库仑、伏特等 SI 单位。</td>
+</tr>
+<tr>
+<td>TE</td>
+<td>Thermal Equilibrium</td>
+<td>热平衡</td>
+<td>没有外部偏置导致的净载流子流动时的平衡状态。</td>
+</tr>
+<tr>
+<td>DA</td>
+<td>Depletion Approximation</td>
+<td>耗尽近似</td>
+<td>把 PN 结耗尽区内的自由电子/空穴近似为很少，只留下固定离化掺杂电荷。</td>
+</tr>
+<tr>
+<td>GCA</td>
+<td>Gradual Channel Approximation</td>
+<td>渐变沟道近似</td>
+<td>假设 MOSFET 沟道电势沿源—漏方向缓慢变化，用简化关系推导沟道电流。</td>
+</tr>
+<tr>
+<td>nMOS / NMOS</td>
+<td>n-channel MOSFET</td>
+<td>n 沟道 MOSFET</td>
+<td>本项目 MOSFET 模型的极性：沟道主要由电子导电。</td>
+</tr>
+<tr>
+<td><code><i>N</i><sub>A</sub></code></td>
+<td>Acceptor concentration</td>
+<td>受主掺杂浓度</td>
+<td>p 型一侧的受主原子数密度。</td>
+</tr>
+<tr>
+<td><code><i>N</i><sub>D</sub></code></td>
+<td>Donor concentration</td>
+<td>施主掺杂浓度</td>
+<td>n 型一侧的施主原子数密度。</td>
+</tr>
+<tr>
+<td><code><i>n</i><sub>i</sub></code></td>
+<td>Intrinsic carrier concentration</td>
+<td>本征载流子浓度</td>
+<td>无掺杂半导体在热平衡时的电子/空穴浓度基准。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>bi</sub></code></td>
+<td>Built-in potential</td>
+<td>内建电势</td>
+<td>p、n 两侧接触后形成的结区电势差。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>th</sub></code></td>
+<td>Threshold voltage</td>
+<td>阈值电压</td>
+<td>nMOS 开始形成强反型沟道所需的栅源电压近似值。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>thermal</sub></code></td>
+<td>Thermal voltage</td>
+<td>热电压</td>
+<td><code><i>k</i><sub>B</sub> T/q</code>，反映热能尺度折算成的电压；它不是 MOSFET 阈值电压。</td>
+</tr>
+<tr>
+<td><code><i>C</i><sub>ox</sub></code></td>
+<td>Oxide capacitance per unit area</td>
+<td>单位面积栅氧电容</td>
+<td>栅氧层把栅极电压耦合到沟道的能力。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>OV</sub></code></td>
+<td>Overdrive voltage</td>
+<td>过驱动电压</td>
+<td><code><i>V</i><sub>GS</sub> - <i>V</i><sub>th</sub></code>，表示栅压超过阈值多少。</td>
+</tr>
+<tr>
+<td><code><i>I</i><sub>D</sub></code></td>
+<td>Drain current</td>
+<td>漏极电流</td>
+<td>从漏极流过 MOSFET 沟道的电流。</td>
+</tr>
+<tr>
+<td><code><i>I</i><sub>S</sub></code></td>
+<td>Reverse saturation current</td>
+<td>反向饱和电流</td>
+<td>理想二极管 I–V 方程里的尺度参数，不等同于实际器件所有反向漏电机制。</td>
+</tr>
+<tr>
+<td>耗尽区</td>
+<td>Depletion region</td>
+<td>耗尽区</td>
+<td>PN 结附近可移动电子/空穴显著减少、主要由固定离化杂质电荷形成空间电荷的区域。</td>
+</tr>
+<tr>
+<td>准中性区</td>
+<td>Quasi-neutral region</td>
+<td>准中性区</td>
+<td>耗尽区外部的半导体区域；宏观正负电荷近似抵消。</td>
+</tr>
+<tr>
+<td>低注入</td>
+<td>Low-level injection</td>
+<td>低水平注入</td>
+<td>偏置产生的少数载流子增量远小于原有多数载流子浓度，便于使用线性扩散近似。</td>
+</tr>
+<tr>
+<td>长基区</td>
+<td>Long-base diode</td>
+<td>长基区二极管条件</td>
+<td>中性区长度远大于少数载流子扩散长度，载流子在抵达接触端前已显著复合。</td>
+</tr>
+<tr>
+<td>强反型</td>
+<td>Strong inversion</td>
+<td>强反型</td>
+<td>MOS 电容表面已形成与衬底多数载流子极性相反、足以形成沟道的载流子层。</td>
+</tr>
+<tr>
+<td>平带电压 <code><i>V</i><sub>FB</sub></code></td>
+<td>Flat-Band Voltage</td>
+<td>平带电压</td>
+<td>MOS 结构中半导体能带近似平直时对应的栅压，受栅材料功函数和界面电荷等影响。</td>
+</tr>
+<tr>
+<td>夹断</td>
+<td>Pinch-off</td>
+<td>沟道夹断</td>
+<td>长沟道 MOSFET 漏端附近反型沟道变薄至近零；进入理想模型的饱和区，不等于器件击穿。</td>
+</tr>
+<tr>
+<td>沟道长度调制</td>
+<td>Channel-Length Modulation</td>
+<td>沟道长度调制</td>
+<td>饱和区下漏压继续上升时，有效沟道变短、漏电流仍略增加的效应；第一版忽略。</td>
+</tr>
+<tr>
+<td>声子散射</td>
+<td>Phonon Scattering</td>
+<td>声子散射</td>
+<td>晶格热振动会散射载流子，是迁移率随温度变化的重要原因之一。</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>Elementary charge</td>
+<td>元电荷量</td>
+<td>单个基本电荷的大小，单位 C；符号取正的电荷量大小，电子电荷为 <code>-q</code>。</td>
+</tr>
+<tr>
+<td><code><i>k</i><sub>B</sub></code></td>
+<td>Boltzmann constant</td>
+<td>玻尔兹曼常数</td>
+<td>把温度换成热能尺度的物理常数，单位 J/K。</td>
+</tr>
+<tr>
+<td><code><i>ε</i><sub>0</sub></code></td>
+<td>Vacuum electric permittivity</td>
+<td>真空介电率</td>
+<td>真空的介电率，单位 F/m。</td>
+</tr>
+<tr>
+<td><code><i>ε</i><sub>r</sub></code></td>
+<td>Relative permittivity</td>
+<td>相对介电常数</td>
+<td>材料介电率相对真空介电率的比值，无量纲。</td>
+</tr>
+<tr>
+<td><code><i>ε</i><sub>s</sub> / <i>ε</i><sub>ox</sub></code></td>
+<td>Semiconductor / oxide permittivity</td>
+<td>半导体/栅氧介电率</td>
+<td><code>ε=<i>ε</i><sub>r</sub> <i>ε</i><sub>0</sub></code>，单位 F/m。</td>
+</tr>
+<tr>
+<td><code><i>E</i><sub>g</sub></code></td>
+<td>Bandgap energy</td>
+<td>带隙能量</td>
+<td>价带与导带之间的能量间隔；若来源以 eV 表示，计算 SI 指数前须转 J。</td>
+</tr>
+<tr>
+<td><code>eV</code></td>
+<td>Electronvolt</td>
+<td>电子伏特</td>
+<td>能量单位；<code>1 eV=q J</code>。</td>
+</tr>
+<tr>
+<td><code><i>N</i><sub>C</sub> / <i>N</i><sub>V</sub></code></td>
+<td>Effective density of states in the conduction / valence band</td>
+<td>导带/价带有效态密度</td>
+<td>参与半导体载流子统计的有效状态数密度，单位 m⁻³。</td>
+</tr>
+<tr>
+<td><code><i>D</i><sub>n</sub> / <i>D</i><sub>p</sub></code></td>
+<td>Electron / hole diffusion coefficient</td>
+<td>电子/空穴扩散系数</td>
+<td>描述载流子因浓度梯度扩散的系数，单位 m²/s。</td>
+</tr>
+<tr>
+<td><code><i>τ</i><sub>n</sub> / <i>τ</i><sub>p</sub></code></td>
+<td>Minority-carrier lifetime</td>
+<td>少数载流子寿命</td>
+<td>少数载流子平均复合时间，单位 s。</td>
+</tr>
+<tr>
+<td><code><i>L</i><sub>n</sub> / <i>L</i><sub>p</sub></code></td>
+<td>Electron / hole diffusion length</td>
+<td>电子/空穴扩散长度</td>
+<td>少数载流子在复合前扩散的特征距离，单位 m。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>GS</sub></code></td>
+<td>Gate-to-Source Voltage</td>
+<td>栅—源电压</td>
+<td>栅极相对源极的电压，单位 V。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>DS</sub></code></td>
+<td>Drain-to-Source Voltage</td>
+<td>漏—源电压</td>
+<td>漏极相对源极的电压，单位 V。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>SB</sub></code></td>
+<td>Source-to-Body Voltage</td>
+<td>源—衬底电压</td>
+<td>源极相对衬底/体区的电压；体偏置会改变阈值，本基础式先取 0。</td>
+</tr>
+<tr>
+<td><code><i>W</i><sub>ch</sub> / <i>L</i><sub>ch</sub></code></td>
+<td>Channel width / channel length</td>
+<td>沟道宽度/长度</td>
+<td>MOSFET 沟道几何尺寸，单位 m；公式中以比值相除后无量纲。</td>
+</tr>
+<tr>
+<td><code><i>n</i><sub>d</sub></code></td>
+<td>Diode ideality factor</td>
+<td>二极管理想因子</td>
+<td>修正理想扩散方程指数斜率的无量纲参数；理想扩散基线设为 1。</td>
+</tr>
+<tr>
+<td>SPICE</td>
+<td>Simulation Program with Integrated Circuit Emphasis</td>
+<td>集成电路仿真程序</td>
+<td>电路仿真器常用格式/模型语境；这里只出现在相关研究背景，不是本项目运行工具。</td>
+</tr>
+<tr>
+<td>TCAD</td>
+<td>Technology Computer-Aided Design</td>
+<td>工艺/器件计算机辅助设计</td>
+<td>用数值方法模拟半导体工艺或器件；本 P02 解析教学模型不是 TCAD。</td>
+</tr>
+<tr>
+<td>体效应</td>
+<td>Body effect</td>
+<td>基体效应</td>
+<td>源—衬底偏压导致 MOSFET 阈值电压变化的现象；本第一版忽略。</td>
+</tr>
+<tr>
+<td>亚阈值电流</td>
+<td>Subthreshold current</td>
+<td>亚阈值电流</td>
+<td>栅压低于阈值时仍流过的电流；本第一版强反型模型不包含它。</td>
+</tr>
+<tr>
+<td>短沟道效应</td>
+<td>Short-channel effects</td>
+<td>短沟道效应</td>
+<td>沟道很短时电场、阈值和漏端控制偏离长沟道模型的现象；本第一版忽略。</td>
+</tr>
+<tr>
+<td>Si</td>
+<td>Silicon</td>
+<td>硅</td>
+<td>本项目 PN 结与基础 MOSFET 公式的教学材料；不代表 SiC。</td>
+</tr>
+<tr>
+<td>SiC</td>
+<td>Silicon Carbide</td>
+<td>碳化硅</td>
+<td>功率器件主线的材料背景；本 P02 基础方程并未建立 SiC 专用模型。</td>
+</tr>
+<tr>
+<td>MIT</td>
+<td>Massachusetts Institute of Technology</td>
+<td>麻省理工学院</td>
+<td>本方程表引用的大学课程资料来源。</td>
+</tr>
+<tr>
+<td>OCW</td>
+<td>OpenCourseWare</td>
+<td>开放课程资源</td>
+<td>大学公开课程讲义/教学资源。</td>
+</tr>
+<tr>
+<td>NIST</td>
+<td>National Institute of Standards and Technology</td>
+<td>美国国家标准与技术研究院</td>
+<td>本项目基础物理常数的来源机构。</td>
+</tr>
+<tr>
+<td>CODATA</td>
+<td>Committee on Data of the International Science Council</td>
+<td>国际科学理事会数据委员会</td>
+<td>国际科学理事会的科学数据委员会；此处指其推荐的基本物理常数值。</td>
+</tr>
+<tr>
+<td>ISC</td>
+<td>International Science Council</td>
+<td>国际科学理事会</td>
+<td>CODATA 所属的国际科学组织。</td>
+</tr>
+<tr>
+<td>IEEE</td>
+<td>Institute of Electrical and Electronics Engineers</td>
+<td>电气电子工程师学会</td>
+<td>Kubulus 等研究所发表的专业学会/出版机构名称。</td>
+</tr>
+<tr>
+<td><code><i>I</i><sub>diode</sub></code></td>
+<td>Diode current</td>
+<td>二极管电流</td>
+<td>PN 结模型的端电流；避免与 MOSFET 漏极电流 <code><i>I</i><sub>D</sub></code> 混用。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>diode</sub></code></td>
+<td>Diode voltage</td>
+<td>二极管电压</td>
+<td>PN 结两端电压；避免与 MOSFET 漏极端电压混淆。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3">3. 方程来源与使用边界</h2>
+<h3 id="a">A. 公用热学与半导体平衡量</h3>
+<table>
+<thead>
+<tr>
+<th>方程/关系</th>
+<th>符号的含义</th>
+<th>为什么要用 / 适用边界</th>
+<th>主要来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code><i>V</i><sub>thermal</sub> = <i>k</i><sub>B</sub> T / q</code></td>
+<td><code><i>k</i><sub>B</sub></code>：Boltzmann constant（玻尔兹曼常数）；<code>T</code>：绝对温度，K；<code>q</code>：元电荷量，C。结果单位为 V。</td>
+<td>把热能 <code><i>k</i><sub>B</sub> T</code>（J）除以电荷量（C），变成电压。300 K 时约 25.85 mV。二极管指数项和半导体载流子统计都会用到。</td>
+<td>NIST CODATA 常数；MIT 6.012 Lecture 1。</td>
+</tr>
+<tr>
+<td><code><i>n</i><sub>0</sub> <i>p</i><sub>0</sub> = <i>n</i><sub>i</sub><sup>2</sup></code></td>
+<td><code><i>n</i><sub>0</sub></code>、<code><i>p</i><sub>0</sub></code>：热平衡电子、空穴浓度；<code><i>n</i><sub>i</sub></code>：本征载流子浓度。三个浓度都用 m⁻³。</td>
+<td>质量作用定律；用于检查平衡载流子数量级。适用于非简并、热平衡模型；重掺杂/非平衡时需更完整模型。</td>
+<td>MIT 6.012 Lecture 1（载流子浓度与热平衡）。</td>
+</tr>
+<tr>
+<td><code><i>n</i><sub>i</sub>(T) ≈ sqrt(<i>N</i><sub>C</sub>(T) <i>N</i><sub>V</sub>(T)) exp[-<i>E</i><sub>g</sub>(T)/(2 <i>k</i><sub>B</sub> T)]</code></td>
+<td><code><i>N</i><sub>C</sub>/<i>N</i><sub>V</sub></code>：导带/价带有效态密度，m⁻³；<code><i>E</i><sub>g</sub></code>：带隙能量，J；指数无量纲。</td>
+<td>说明本征浓度强烈依赖温度。要算温度扫描，不能把 300 K 的 <code><i>n</i><sub>i</sub></code> 原封不动用于所有温度；需同时指定材料的 <code><i>E</i><sub>g</sub>(T)</code>、<code><i>N</i><sub>C</sub>(T)</code>、<code><i>N</i><sub>V</sub>(T)</code> 来源。本式是非简并统计近似，不单独提供这些材料参数。</td>
+<td>MIT 6.012 Lecture 1；材料参数需用可追溯的硅材料来源。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="b-pn">B. PN 结解析模型</h3>
+<table>
+<thead>
+<tr>
+<th>方程</th>
+<th>符号说明</th>
+<th>直观解释和有效条件</th>
+<th>主要来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code><i>V</i><sub>bi</sub> = <i>V</i><sub>thermal</sub> ln(<i>N</i><sub>A</sub> <i>N</i><sub>D</sub> / <i>n</i><sub>i</sub><sup>2</sup>)</code></td>
+<td><code><i>N</i><sub>A</sub></code>、<code><i>N</i><sub>D</sub></code>、<code><i>n</i><sub>i</sub></code> 均为 m⁻³；比例项无量纲；<code>ln</code> 是自然对数。</td>
+<td>掺杂后 p、n 两侧载流子浓度不同，接触后扩散形成电场；电场建立到足以抵消继续扩散时，形成内建电势。采用热平衡、完全电离、非简并近似。</td>
+<td>MIT 6.012 Lecture 4《p-n Junctions: Electrostatics》。</td>
+</tr>
+<tr>
+<td><code><i>W</i><sub>dep</sub> = sqrt[(2 <i>ε</i><sub>s</sub> / q)(1/<i>N</i><sub>A</sub> + 1/<i>N</i><sub>D</sub>)(<i>V</i><sub>bi</sub> - <i>V</i><sub>a</sub>)]</code></td>
+<td><code><i>W</i><sub>dep</sub></code>：总耗尽层宽度，m；<code><i>ε</i><sub>s</sub>=<i>ε</i><sub>r,s</sub> <i>ε</i><sub>0</sub></code>：半导体介电率，F/m；<code><i>V</i><sub>a</sub></code>：外加结电压，V，正值表示正向偏置。</td>
+<td>外加正向偏压降低势垒、耗尽层变窄；反向偏压可用负的 <code><i>V</i><sub>a</sub></code> 表示，使耗尽层变宽。来自突变结与耗尽近似；仅用于根号内为非负、未进入强击穿/高注入等情形。</td>
+<td>MIT 6.012 Lecture 4；COMSOL 官方 PN 结案例用于对照基准设置，不是实测数据。</td>
+</tr>
+<tr>
+<td><code><i>x</i><sub>n</sub> = [<i>N</i><sub>A</sub>/(<i>N</i><sub>A</sub>+<i>N</i><sub>D</sub>)] <i>W</i><sub>dep</sub></code>；<code><i>x</i><sub>p</sub> = [<i>N</i><sub>D</sub>/(<i>N</i><sub>A</sub>+<i>N</i><sub>D</sub>)] <i>W</i><sub>dep</sub></code></td>
+<td><code><i>x</i><sub>n</sub></code>、<code><i>x</i><sub>p</sub></code>：耗尽区分别伸入 n、p 两侧的宽度，m。</td>
+<td>由两侧固定电荷大小近似相等得出。较轻掺杂的一侧通常承担更大耗尽宽度。</td>
+<td>MIT 6.012 Lecture 4。</td>
+</tr>
+<tr>
+<td><code><i>I</i><sub>diode</sub> = <i>I</i><sub>S</sub> {exp[<i>V</i><sub>diode</sub>/(<i>n</i><sub>d</sub> <i>V</i><sub>thermal</sub>)] - 1}</code></td>
+<td><code><i>I</i><sub>diode</sub></code>：二极管电流，A；<code><i>V</i><sub>diode</sub></code>：二极管端电压，V；<code><i>n</i><sub>d</sub></code>：理想因子，无量纲；第一版理想扩散模型取 <code><i>n</i><sub>d</sub>=1</code>。</td>
+<td>小正向电压时电流指数上升；零偏时电流为 0；反向电压下理想方程趋近 <code>-<i>I</i><sub>S</sub></code>。真实器件会有串联电阻、复合、击穿等偏离，本项目不把这个公式用于产品预测。</td>
+<td>MIT 6.012 Lecture 5–6《Injection and Flow》《I-V Relationship》。</td>
+</tr>
+<tr>
+<td><code><i>I</i><sub>S</sub> = q A <i>n</i><sub>i</sub>² [<i>D</i><sub>n</sub>/(<i>L</i><sub>n</sub> <i>N</i><sub>A</sub>) + <i>D</i><sub>p</sub>/(<i>L</i><sub>p</sub> <i>N</i><sub>D</sub>)]</code>；<code><i>L</i><sub>n</sub>=sqrt(<i>D</i><sub>n</sub> <i>τ</i><sub>n</sub>)</code>；<code><i>L</i><sub>p</sub>=sqrt(<i>D</i><sub>p</sub> <i>τ</i><sub>p</sub>)</code></td>
+<td><code>A</code>：结面积，m²；<code><i>D</i><sub>n</sub>/<i>D</i><sub>p</sub></code>：扩散系数，m²/s；<code><i>τ</i><sub>n</sub>/<i>τ</i><sub>p</sub></code>：少数载流子寿命，s；<code><i>L</i><sub>n</sub>/<i>L</i><sub>p</sub></code>：扩散长度，m。</td>
+<td>这是长基区、低注入、理想扩散条件下，电子与空穴扩散电流合成的饱和电流表达式。若目前没有可靠的 <code>D</code> 和 <code>τ</code> 输入，代码中应把 <code><i>I</i><sub>S</sub></code> 作为注明“教学假设”的独立参数，而不是伪造测量值。</td>
+<td>MIT 6.012 Lecture 5–6。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="c-nmos">C. nMOS 长沟道教学模型</h3>
+<table>
+<thead>
+<tr>
+<th>方程</th>
+<th>符号说明</th>
+<th>直观解释和有效条件</th>
+<th>主要来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code><i>C</i><sub>ox</sub> = <i>ε</i><sub>ox</sub> / <i>t</i><sub>ox</sub></code></td>
+<td><code><i>ε</i><sub>ox</sub></code>：栅氧介电率，F/m；<code><i>t</i><sub>ox</sub></code>：氧化层厚度，m；<code><i>C</i><sub>ox</sub></code>：单位面积电容，F/m²。</td>
+<td>氧化层越薄或介电率越高，单位面积电容通常越大，栅极对沟道的控制耦合更强。不要把 <code><i>C</i><sub>ox</sub></code>（每平方米）与总栅电容混为一谈。</td>
+<td>MIT 6.012 Lecture 9–10；COMSOL 材料文档提供 SI 单位口径。</td>
+</tr>
+<tr>
+<td><code><i>φ</i><sub>F</sub> = <i>V</i><sub>thermal</sub> ln(<i>N</i><sub>A</sub>/<i>n</i><sub>i</sub>)</code></td>
+<td><code><i>φ</i><sub>F</sub></code>：p 型衬底的费米势大小，V。这里使用正值定义。</td>
+<td>描述掺杂后费米能级相对本征能级的位置；这里面 <code><i>n</i><sub>i</sub></code> 随温度变，故 <code><i>φ</i><sub>F</sub></code> 也会变。</td>
+<td>MIT 6.012 Lecture 9–10。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>th</sub> = <i>V</i><sub>FB</sub> + 2<i>φ</i><sub>F</sub> + sqrt(4 q <i>ε</i><sub>s</sub> <i>N</i><sub>A</sub> <i>φ</i><sub>F</sub>)/<i>C</i><sub>ox</sub></code></td>
+<td><code><i>V</i><sub>FB</sub></code>：Flat-Band Voltage（平带电压），V；本项目先将其作为输入参数；<code><i>N</i><sub>A</sub></code>：p 型衬底受主浓度；<code><i>V</i><sub>th</sub></code>：阈值电压。</td>
+<td>作为 <code><i>V</i><sub>SB</sub>=0</code>（源—衬底电压为 0）、nMOS、突变耗尽近似、强反型阈值定义的基础式；未包含复杂界面电荷、短沟道和器件工艺校准。</td>
+<td>MIT 6.012 Lecture 9–10 的 MOS 电容/阈值关系；符号转换采用本文件的正 <code><i>φ</i><sub>F</sub></code> 定义。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>OV</sub> = <i>V</i><sub>GS</sub> - <i>V</i><sub>th</sub></code></td>
+<td><code><i>V</i><sub>GS</sub></code>：栅—源电压，V；<code><i>V</i><sub>OV</sub></code>：过驱动电压，V。</td>
+<td>栅压高过阈值的余量。<code><i>V</i><sub>OV</sub>≤0</code> 时第一版强反型模型置 <code><i>I</i><sub>D</sub>=0</code>；这不代表现实 MOSFET 在阈值下完全无电流，因为亚阈值电流被省略。</td>
+<td>MIT 6.012 Lecture 10–11。</td>
+</tr>
+<tr>
+<td><code><i>I</i><sub>D</sub>=0</code>（截止）；<code><i>I</i><sub>D</sub>=<i>μ</i><sub>n</sub> <i>C</i><sub>ox</sub> (<i>W</i><sub>ch</sub>/<i>L</i><sub>ch</sub>)[<i>V</i><sub>OV</sub> <i>V</i><sub>DS</sub> - <i>V</i><sub>DS</sub>²/2]</code>（线性/三极区）；<code><i>I</i><sub>D</sub>=(1/2) <i>μ</i><sub>n</sub> <i>C</i><sub>ox</sub> (<i>W</i><sub>ch</sub>/<i>L</i><sub>ch</sub>) <i>V</i><sub>OV</sub>²</code>（饱和区）</td>
+<td><code><i>μ</i><sub>n</sub></code>：电子迁移率，m²/(V·s)；<code><i>W</i><sub>ch</sub>/<i>L</i><sub>ch</sub></code>：沟道宽度/长度，m；<code><i>V</i><sub>DS</sub></code>：漏—源电压，V；<code><i>I</i><sub>D</sub></code>：A。线性区条件 <code>0≤<i>V</i><sub>DS</sub>≤<i>V</i><sub>OV</sub></code>；饱和区条件 <code><i>V</i><sub>DS</sub>≥<i>V</i><sub>OV</sub>&gt;0</code>。</td>
+<td>小 <code><i>V</i><sub>DS</sub></code> 时，沟道像受栅压控制的电阻；<code><i>V</i><sub>DS</sub></code> 增大到约 <code><i>V</i><sub>OV</sub></code> 后，漏端沟道夹断，基础模型的电流进入饱和。两段在 <code><i>V</i><sub>DS</sub>=<i>V</i><sub>OV</sub></code> 处电流连续。</td>
+<td>MIT 6.012 Lecture 10–11 的 GCA/DA 长沟道模型。第一版忽略沟道长度调制、短沟道效应、自热、陷阱和高场迁移率退化。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="d">D. 温度扩展规则（供后续实现使用）</h3>
+<table>
+<thead>
+<tr>
+<th>量</th>
+<th>温度规则</th>
+<th>本项目处理边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code><i>V</i><sub>thermal</sub>(T)</code></td>
+<td><code><i>k</i><sub>B</sub> T/q</code>，直接由 SI 常数计算。</td>
+<td>可直接随 <code>T</code> 更新。</td>
+</tr>
+<tr>
+<td><code><i>n</i><sub>i</sub>(T)</code></td>
+<td>用上表本征浓度关系，且需要硅的带隙/态密度随温度模型。</td>
+<td>在这些输入有来源前，不允许只改热电压、却声称已完整刻画二极管温度效应。</td>
+</tr>
+<tr>
+<td><code><i>μ</i><sub>n</sub>(T)</code></td>
+<td>可用简单幂律 <code><i>μ</i><sub>n</sub>(T)=<i>μ</i><sub>n,0</sub> (T/<i>T</i><sub>0</sub>)^(-<i>α</i><sub>n</sub>)</code> 做教学敏感性分析；COMSOL 的 Power Law Mobility Model（幂律迁移率模型）也将晶格/声子散射纳入简化表达。硅的参考参数示例为 <code><i>T</i><sub>0</sub>=300 K</code>、<code><i>μ</i><sub>n,0</sub>=1448 cm²/(V·s)=0.1448 m²/(V·s)</code>、<code><i>α</i><sub>n</sub>=2.33</code>。</td>
+<td>这是硅参数示例，不是 SiC 参数，也不等于完整迁移率模型；第一版须标为“硅教学参数/模型假设”。如要更真实地描述掺杂和高场依赖，需换更复杂的模型并追加验证。</td>
+</tr>
+<tr>
+<td><code><i>V</i><sub>th</sub>(T)</code></td>
+<td>由 <code><i>V</i><sub>thermal</sub>(T)</code>、<code><i>n</i><sub>i</sub>(T)</code>、<code><i>φ</i><sub>F</sub>(T)</code>、介电率、电容和 <code><i>V</i><sub>FB</sub></code> 等电学/材料参数影响。</td>
+<td>迁移率会直接影响 <code><i>I</i><sub>D</sub>(T)</code>，但不直接出现在本基础静电阈值公式中；阈值变化方向由参数模型共同决定，不能预先简单断言。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="e">E. 可追溯的硅参数候选（暂不等于已冻结输入）</h3>
+<p>COMSOL 6.3 Semiconductor Material Properties 表列出一组硅材料参考量：相对介电率 <code><i>ε</i><sub>r</sub>,Si=11.7</code>、300 K 带隙 <code><i>E</i><sub>g</sub>≈1.12 eV</code>、<code><i>N</i><sub>C</sub>(300 K)=2.8×10<sup>19</sup> cm⁻³</code>、<code><i>N</i><sub>V</sub>(300 K)=1.04×10<sup>19</sup> cm⁻³</code>。其幂律迁移率子模型给出电子迁移率参考 <code><i>μ</i><sub>n,0</sub>=1448 cm²/(V·s)</code>、温度指数 <code><i>α</i><sub>n</sub>=2.33</code>、参考温度 <code><i>T</i><sub>0</sub>=300 K</code>。这些是软件文档所列的硅模型参数，不是本项目测量值；使用前需统一转成 SI 单位，并在输入表记录来源版本、模型名称和使用限制。数据手册器件参数不与上述通用硅教学参数混合。</p>
+<h2 id="4">4. 统一单位字典</h2>
+<table>
+<thead>
+<tr>
+<th>变量/类别</th>
+<th>代码内部单位</th>
+<th>常见外部单位换算</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>长度 <code>x,<i>t</i><sub>ox</sub>,<i>W</i><sub>ch</sub>,<i>L</i><sub>ch</sub>,<i>L</i><sub>n</sub>,<i>L</i><sub>p</sub></code></td>
+<td>m</td>
+<td><code>1 μm = 1×10⁻⁶ m</code>；<code>1 nm = 1×10⁻⁹ m</code></td>
+<td>用于电场、耗尽层和沟道几何。</td>
+</tr>
+<tr>
+<td>面积 <code>A</code></td>
+<td>m²</td>
+<td><code>1 cm² = 1×10⁻⁴ m²</code></td>
+<td>只用于 PN 结面积。</td>
+</tr>
+<tr>
+<td>掺杂/载流子浓度 <code><i>N</i><sub>A</sub>,<i>N</i><sub>D</sub>,<i>n</i><sub>i</sub>,n,p</code></td>
+<td>m⁻³</td>
+<td><code>1 cm⁻³ = 1×10⁶ m⁻³</code>；例：<code>1×10¹⁵ cm⁻³ = 1×10²¹ m⁻³</code></td>
+<td>这是最容易错六个数量级的地方；统一转成 m⁻³ 后再参与公式。</td>
+</tr>
+<tr>
+<td>电压 <code><i>V</i><sub>D</sub>,<i>V</i><sub>bi</sub>,<i>V</i><sub>a</sub>,<i>V</i><sub>GS</sub>,<i>V</i><sub>DS</sub>,<i>V</i><sub>th</sub></code></td>
+<td>V</td>
+<td>mV 转 V：乘 <code>10⁻³</code></td>
+<td>thermal voltage 与 MOS threshold 分开命名。</td>
+</tr>
+<tr>
+<td>电流 <code><i>I</i><sub>D</sub>,<i>I</i><sub>S</sub></code></td>
+<td>A</td>
+<td>mA=<code>10⁻³ A</code>；μA=<code>10⁻⁶ A</code></td>
+<td>输出是解析模型值，不是测试结果。</td>
+</tr>
+<tr>
+<td>迁移率 <code><i>μ</i><sub>n</sub>,<i>μ</i><sub>p</sub></code></td>
+<td>m²/(V·s)</td>
+<td><code>1 cm²/(V·s)=1×10⁻⁴ m²/(V·s)</code></td>
+<td>例如 <code>1448 cm²/(V·s)=0.1448 m²/(V·s)</code>。</td>
+</tr>
+<tr>
+<td>扩散系数 <code><i>D</i><sub>n</sub>,<i>D</i><sub>p</sub></code></td>
+<td>m²/s</td>
+<td><code>cm²/s</code> 乘 <code>10⁻⁴</code> 转为 <code>m²/s</code></td>
+<td>同迁移率的长度平方换算。</td>
+</tr>
+<tr>
+<td>时间/寿命 <code><i>τ</i><sub>n</sub>,<i>τ</i><sub>p</sub></code></td>
+<td>s</td>
+<td>μs=<code>10⁻⁶ s</code>；ns=<code>10⁻⁹ s</code></td>
+<td>不是本第一版一定要输入的参数。</td>
+</tr>
+<tr>
+<td>温度 <code>T,<i>T</i><sub>0</sub></code></td>
+<td>K</td>
+<td>摄氏度转 K：<code>T(K)=T(°C)+273.15</code></td>
+<td>热力学公式必须使用开尔文。</td>
+</tr>
+<tr>
+<td>介电率 <code><i>ε</i><sub>s</sub>,<i>ε</i><sub>ox</sub>,<i>ε</i><sub>0</sub></code></td>
+<td>F/m</td>
+<td>相对介电常数 <code><i>ε</i><sub>r</sub></code> 无量纲；<code>ε=<i>ε</i><sub>r</sub> <i>ε</i><sub>0</sub></code></td>
+<td>材料相对介电率不能直接当成 F/m。</td>
+</tr>
+<tr>
+<td>单位面积电容 <code><i>C</i><sub>ox</sub></code></td>
+<td>F/m²</td>
+<td>若使用 F/cm²，需换算</td>
+<td>公式 <code><i>C</i><sub>ox</sub>=<i>ε</i><sub>ox</sub>/<i>t</i><sub>ox</sub></code>。</td>
+</tr>
+<tr>
+<td>能量 <code><i>E</i><sub>g</sub></code></td>
+<td>J</td>
+<td>若来源写 eV，乘 <code>q</code> 转 J</td>
+<td>指数项 <code><i>E</i><sub>g</sub>/(<i>k</i><sub>B</sub> T)</code> 必须无量纲。</td>
+</tr>
+<tr>
+<td>自然对数 <code>ln(·)</code>、指数 <code>exp(·)</code></td>
+<td>无单位函数</td>
+<td>函数输入必须无量纲</td>
+<td>例如 <code><i>N</i><sub>A</sub> <i>N</i><sub>D</sub>/<i>n</i><sub>i</sub>²</code>、<code><i>V</i><sub>D</sub>/(<i>n</i><sub>d</sub> <i>V</i><sub>thermal</sub>)</code> 均无量纲。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_1">代码输入约定</h3>
+<ol>
+<li>输入表和 Python 内部计算一律用 SI 单位；若来源用 cm、μm、cm⁻³ 或 cm²/(V·s)，在读取时做显式转换，并保留原值、原单位和换算值。</li>
+<li>所有对数或指数的参数必须无量纲；所有平方根里的量必须满足物理定义域。</li>
+<li>参数表必须区分“官方常数/材料资料参数/论文参数/教学假设”；本项目不导入论文器件曲线来拟合模型。</li>
+<li><code><i>V</i><sub>thermal</sub></code> 与 <code><i>V</i><sub>th</sub></code> 绝不可用同一变量名；建议代码用 <code>v_thermal</code> 与 <code>vth_mos</code>。</li>
+<li>由于 PN 模型和 MOS 模型都是教学解析模型，曲线标题需标明“解析教学模型”，不能标注“实测”或“产品仿真”。</li>
+</ol>
+<h2 id="5">5. 本步交付与下一步</h2>
+<p>本表记录模型所用关系式、符号和单位。当前最小可复现模型已按冻结参数实现：先计算 PN 结耗尽区及理想二极管 I–V，再计算长沟道 nMOS 转移与输出特性。已有的自动检查用于发现单位换算、边界和连续性错误，不是实验验证或产品精度证明。下一步是扩展结果合理性核查与敏感性分析。</p>
+<h2 id="6">6. 来源清单</h2>
+<ul>
+<li><strong>MIT 6.012 OpenCourseWare（Microelectronic Devices and Circuits）</strong>：Lecture 1《Introduction to Semiconductors》用于掺杂、平衡载流子和迁移率基础；Lecture 4《p-n Junctions: Electrostatics》用于耗尽近似和 PN 结静电；Lecture 5–6 用于载流子注入与理想 PN 结 I–V；Lecture 9–10 用于 MOS 电容和阈值关系；Lecture 10–11 用于渐变沟道近似及长沟道 MOSFET 大信号 I–V 模型。链接见下方。</li>
+<li><strong>NIST CODATA 2022</strong>：元电荷、Boltzmann 常数及真空介电率。<code>q=1.602176634×10⁻¹⁹ C</code>，<code><i>k</i><sub>B</sub>=1.380649×10⁻²³ J/K</code>，<code><i>ε</i><sub>0</sub>≈8.8541878188×10⁻¹² F/m</code>。</li>
+<li><strong>COMSOL 官方 Semiconductor Module 文档</strong>：只用来交叉检查 SI 单位、硅相对介电率/迁移率参考值和“完整器件模型需要考虑温度、掺杂、复合等因素”的边界；不将 COMSOL 文档说成实验数据，也不把本项目模型说成 COMSOL 求解。</li>
+<li><strong>Kubulus et al. (2025), IEEE Transactions on Power Electronics</strong>：属于 P02 的 SiC 紧凑模型研究背景，不是本表基础 PN/MOS 方程的唯一来源，也不代表本项目复现其 SPICE 模型。</li>
+</ul>
+<h3 id="_2">直达资料</h3>
+<ul>
+<li><a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec01/">MIT 6.012 Lecture 1 — Introduction to Semiconductors</a></li>
+<li><a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec04/">MIT 6.012 Lecture 4 — p-n Junctions: Electrostatics</a></li>
+<li><a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec05/">MIT 6.012 Lecture 5 — p-n Junction Injection and Flow</a></li>
+<li><a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec06/">MIT 6.012 Lecture 6 — p-n Junctions: I-V Relationship</a></li>
+<li><a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec09/">MIT 6.012 Lecture 9 — MOS Capacitors I</a></li>
+<li><a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec10/">MIT 6.012 Lecture 10 — MOS Caps II; MOSFETs I</a></li>
+<li><a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec11/">MIT 6.012 Lecture 11 — MOSFETs II; Large Signal Models</a></li>
+<li><a href="https://www.physics.nist.gov/cuu/pdf/wall_2022.pdf">NIST CODATA 2022 constant values (including elementary charge, Boltzmann constant, and vacuum electric permittivity)</a></li>
+<li><a href="https://doc.comsol.com/6.3/doc/com.comsol.help.comsol/comsol_ref_materials.25.47.html">COMSOL semiconductor material properties</a></li>
+<li><a href="https://doc.comsol.com/6.3/doc/com.comsol.help.semicond/semicond_ug_semiconductor.6.13.html">COMSOL power-law mobility model</a></li>
+<li><a href="https://doc.comsol.com/6.4/doc/com.comsol.help.models.semicond.pn_junction_1d/pn_junction_1d.html">COMSOL 6.4 P–N Junction 1D official example</a></li>
+<li><a href="https://doi.org/10.1109/TPEL.2024.3510037">Kubulus et al., DOI 10.1109/TPEL.2024.3510037</a></li>
+</ul></main></body>
+</html>

@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P02｜完整初学者讲义</title>
+  <style>
+:root { color-scheme: light; --paper: #f3f1e9; --ink: #183037; --muted: #536c70;
+  --line: #c8d2cd; --accent: #087c74; --amber: #946719; }
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.72 "Segoe UI", "Microsoft YaHei", sans-serif; }
+main { width: min(860px, calc(100% - 40px)); margin: 0 auto; padding: 36px 0 64px;
+  overflow-wrap: anywhere; }
+h1, h2, h3, h4 { color: #102a30; line-height: 1.35; }
+h1 { margin: 0 0 24px; padding-bottom: 16px; border-bottom: 2px solid var(--accent);
+  font-size: clamp(1.7rem, 4vw, 2.3rem); }
+h2 { margin-top: 2.2em; padding-bottom: .35em; border-bottom: 1px solid var(--line);
+  font-size: 1.45rem; }
+h3 { margin-top: 1.7em; font-size: 1.15rem; }
+p, li { max-width: 78ch; }
+a { color: #076a65; text-underline-offset: 3px; }
+strong { color: #243a35; }
+blockquote { margin: 1.2em 0; padding: 12px 18px; border-left: 3px solid var(--amber);
+  background: #e8e7dc; color: #3f5555; }
+code { padding: .12em .35em; background: #e3e8e2; color: #18474a;
+  font: .9em/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; }
+code sub, code sup { font: inherit; font-size: .72em; line-height: 0; }
+code sub { vertical-align: sub; }
+code sup { vertical-align: super; }
+pre { overflow-x: auto; padding: 16px; background: #172e32; color: #e9f0e8; }
+pre code { padding: 0; background: transparent; color: inherit; }
+table { width: 100%; min-width: 680px; margin: 18px 0 26px; border-collapse: collapse;
+  font-size: .92rem; }
+th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left;
+  vertical-align: top; }
+th { background: #dfe8e1; color: #183e40; }
+tr:nth-child(even) td { background: rgba(222, 230, 220, .48); }
+hr { margin: 2em 0; border: 0; border-top: 1px solid var(--line); }
+img { max-width: 100%; height: auto; }
+@media (max-width: 600px) {
+  main { width: min(100% - 28px, 860px); padding-top: 22px; }
+  body { font-size: 15px; }
+  th, td { padding: 8px; }
+}
+</style>
+</head>
+<body><main><h1 id="p02-pn-mosfet">P02 第一步｜先用直觉读懂公式：PN 结、MOSFET 与单位</h1>
+<blockquote>
+<p><strong>这份讲义做什么</strong>：把项目 02 第一步的三个部分重新讲成入门材料：① PN 结，② MOSFET，③ 参数与单位。目标是先理解“公式在说什么、为什么用、输入和输出是什么”，而不是背公式。</p>
+<p><strong>当前边界</strong>：学习对象是硅 PN 结二极管和硅基长沟道增强型 nMOSFET 的基础解析关系。P02 已另行冻结教学参数集 <code>P02-EDU-V1</code> 并实现 Python 解析模型；本讲义页面的滑块仍只作概念演示，不会调用计算脚本。这不是 SiC 器件模型、COMSOL/TCAD 仿真或产品拟合。</p>
+</blockquote>
+<h2 id="_1">读公式的四个问题</h2>
+<p>每次先问：</p>
+<ol>
+<li>公式描述哪个对象？是半导体里的电荷、器件结构，还是端口电流？</li>
+<li>输入和输出分别是什么？例如给定温度，得到一个电压尺度；给定掺杂和偏置，估算耗尽区宽度。</li>
+<li>改变输入会带来什么方向的变化？变宽、变窄、增大、减小，还是换工作区？</li>
+<li>公式省略了什么？基础公式通常只在某些假设下成立，不等于能预测任何真实产品。</li>
+</ol>
+<p>公式可以理解为一段压缩的因果说明：在前提成立时，输入变化会怎样影响输出。</p>
+<hr>
+<h1 id="pn">第一部分｜PN 结：接缝附近为什么会出现内部势垒</h1>
+<h2 id="1">1. 先看材料接触后发生了什么</h2>
+<p>p 型硅里空穴是多数载流子；n 型硅里电子是多数载流子。两块材料接触时，载流子会因为浓度差扩散：电子从 n 侧向 p 侧走，空穴从 p 侧向 n 侧走。</p>
+<p>载流子离开接缝附近后，留下了基本固定不动的离化掺杂原子。接缝附近因此出现电荷分离、电场和一段自由载流子明显减少的区域，称为<strong>耗尽区</strong>。</p>
+<p>可以把扩散想成球从高处往低处滚：浓度差推动载流子跨过接缝；它们留下的固定电荷又形成一座“电势坡”，电场会把后续载流子往回推。热平衡时两种趋势互相抵消，<strong>内部仍存在电场和电势差，但器件外部的净电流为零</strong>。</p>
+<pre><code>p 型硅                   耗尽区                    n 型硅
+</code></pre>
+<p>空穴多数       A⁻  A⁻  A⁻ | D⁺  D⁺  D⁺          电子多数
+  ─────────────────────────|────────────────────────────
+                负离化受主   ← 电场方向（D⁺ 指向 A⁻）</p>
+<p>A⁻、D⁺ 是固定的离化杂质，不是正在移动的空穴或电子。耗尽区以外称为<strong>准中性区</strong>，宏观上正负电荷大致抵消。</p>
+<h2 id="2">2. 热电压：把“热能尺度”换成“电压尺度”</h2>
+<p><strong><i>V</i><sub>thermal</sub> = <i>k</i><sub>B</sub> × T / q</strong></p>
+<ul>
+<li><i>V</i><sub>thermal</sub>：thermal voltage（热电压），单位 V（伏特）。</li>
+<li><i>k</i><sub>B</sub>：Boltzmann constant（玻尔兹曼常数），单位 J/K，描述温度对应的热能尺度。</li>
+<li>T：绝对温度，单位 K（开尔文）。不能把摄氏度数值直接代入。</li>
+<li>q：elementary charge（元电荷量）的正值大小，单位 C（库仑）。</li>
+<li>单位检查：J/C = V，因此结果是电压。300 K 时约为 25.85 mV。</li>
+</ul>
+<p>用单位看这一步：<i>k</i><sub>B</sub>（焦耳/开尔文）乘 T（开尔文）得到能量 J；再除以 q（库仑），J/C 就是伏特 V。它不是外加在器件上的电源电压，而是载流子统计中的一个热能刻度，会出现在 PN 结方程中。注意 <i>V</i><sub>thermal</sub> 和 MOSFET 阈值电压 <i>V</i><sub>th</sub> 名字相似，但不是同一个量。</p>
+<p><strong>数量级示例（不是器件参数）</strong>：SI 制中的 <i>k</i><sub>B</sub> = 1.380649×10⁻²³ J/K、q = 1.602176634×10⁻¹⁹ C。代入 300 K，<i>V</i><sub>thermal</sub> ≈ 25.85 mV。这里的 300 K 只帮助建立数量感，不是项目参数冻结或器件工作点。</p>
+<h2 id="3">3. 内建电势：接触后形成的内部“电压坡”</h2>
+<p><strong><i>V</i><sub>bi</sub> = <i>V</i><sub>thermal</sub> × ln(<i>N</i><sub>A</sub> × <i>N</i><sub>D</sub> / <i>n</i><sub>i</sub>²)</strong></p>
+<ul>
+<li><i>V</i><sub>bi</sub>：Built-in potential（内建电势），单位 V；是 PN 结热平衡时的内部势垒电压。</li>
+<li><i>N</i><sub>A</sub>：Acceptor concentration（受主浓度），表示 p 侧受主掺杂原子的数密度。</li>
+<li><i>N</i><sub>D</sub>：Donor concentration（施主浓度），表示 n 侧施主掺杂原子的数密度。</li>
+<li><i>n</i><sub>i</sub>：Intrinsic carrier concentration（本征载流子浓度），无掺杂半导体载流子浓度的基准。</li>
+<li>ln：natural logarithm（自然对数）。括号里的量必须是无单位的比值。</li>
+</ul>
+<p>这个公式回答：给定温度和掺杂浓度时，结区的内部势垒大致多大？它基于热平衡、非简并统计等近似；严重重掺杂、非平衡或复杂材料条件需要更完整的模型。</p>
+<h2 id="4">4. 耗尽层宽度：内部势垒影响多宽</h2>
+<p>突变结加耗尽近似时：</p>
+<p><strong><i>W</i><sub>dep</sub> = √[(2 <i>ε</i><sub>s</sub> / q)(1/<i>N</i><sub>A</sub> + 1/<i>N</i><sub>D</sub>)(<i>V</i><sub>bi</sub> − <i>V</i><sub>a</sub>)]</strong></p>
+<ul>
+<li><i>W</i><sub>dep</sub>：depletion-region width（耗尽区宽度），单位 m。</li>
+<li><i>ε</i><sub>s</sub>：半导体介电率，单位 F/m；相对介电常数乘以真空介电率才得到介电率。</li>
+<li><i>V</i><sub>a</sub>：Applied junction voltage（外加结电压）。本项目约定正值为正向偏置、负值为反向偏置。</li>
+<li><i>N</i><sub>A</sub>、<i>N</i><sub>D</sub>、q、<i>V</i><sub>bi</sub> 含义见上文。</li>
+</ul>
+<p>把耗尽区想成电势坡影响的“范围”：</p>
+<ul>
+<li>反向偏置时 <i>V</i><sub>a</sub>&lt;0，因此 <i>V</i><sub>bi</sub>−<i>V</i><sub>a</sub> 增大，耗尽区变宽。</li>
+<li>正向偏置时 <i>V</i><sub>a</sub>&gt;0，因此 <i>V</i><sub>bi</sub>−<i>V</i><sub>a</sub> 减小，耗尽区变窄，势垒降低。</li>
+</ul>
+<p>耗尽区伸入两侧的宽度不是平均分配，而要满足近似电荷平衡：</p>
+<p><strong>q × <i>N</i><sub>A</sub> × <i>x</i><sub>p</sub> ≈ q × <i>N</i><sub>D</sub> × <i>x</i><sub>n</sub></strong></p>
+<p>所以：</p>
+<p><strong><i>x</i><sub>n</sub> = [<i>N</i><sub>A</sub>/(<i>N</i><sub>A</sub>+<i>N</i><sub>D</sub>)] × <i>W</i><sub>dep</sub></strong>
+<strong><i>x</i><sub>p</sub> = [<i>N</i><sub>D</sub>/(<i>N</i><sub>A</sub>+<i>N</i><sub>D</sub>)] × <i>W</i><sub>dep</sub></strong></p>
+<p>掺杂较轻的一侧承担更大耗尽宽度。这有助于理解结区电场、耐压和结电容为何受掺杂影响。</p>
+<p><strong>适用边界：</strong>突变结、耗尽近似；未进入强击穿或严重高注入。根号内必须非负。本式不是任意器件结构的精确电场解。</p>
+<h2 id="5-iv">5. 二极管 I–V：电压如何改变电流</h2>
+<p><strong><i>I</i><sub>diode</sub> = <i>I</i><sub>S</sub> × {exp[<i>V</i><sub>diode</sub> / (<i>n</i><sub>d</sub> × <i>V</i><sub>thermal</sub>)] − 1}</strong></p>
+<ul>
+<li><i>I</i><sub>diode</sub>：diode current（二极管电流），单位 A。</li>
+<li><i>V</i><sub>diode</sub>：二极管两端电压，单位 V。</li>
+<li><i>I</i><sub>S</sub>：reverse saturation current（反向饱和电流），理想方程中的尺度电流，不等于真实器件所有反向漏电。</li>
+<li><i>n</i><sub>d</sub>：diode ideality factor（二极管理想因子），无量纲；理想扩散基线通常取 1。</li>
+<li>exp：exponential function（指数函数）；指数里的输入必须无单位。</li>
+</ul>
+<p>怎么读：</p>
+<ul>
+<li><i>V</i><sub>diode</sub>=0 时，exp(0)−1=0，所以理想净电流为零。</li>
+<li>正向电压增加时，指数项快速增大，电流迅速上升，这就是“正向导通”的基础图像。</li>
+<li>反向电压下，理想式趋近 −<i>I</i><sub>S</sub>；真实器件还可能有漏电、雪崩击穿等机制，这条式子不覆盖。</li>
+</ul>
+<p>长基区、低注入近似下，<i>I</i><sub>S</sub> 可由载流子扩散关系估算：</p>
+<p><strong><i>I</i><sub>S</sub> = q × A × <i>n</i><sub>i</sub>² × [<i>D</i><sub>n</sub>/(<i>L</i><sub>n</sub> × <i>N</i><sub>A</sub>) + <i>D</i><sub>p</sub>/(<i>L</i><sub>p</sub> × <i>N</i><sub>D</sub>)]</strong>
+<strong><i>L</i><sub>n</sub> = √(<i>D</i><sub>n</sub> × <i>τ</i><sub>n</sub>)，<i>L</i><sub>p</sub> = √(<i>D</i><sub>p</sub> × <i>τ</i><sub>p</sub>)</strong></p>
+<p>A 是结面积；<i>D</i><sub>n</sub>、<i>D</i><sub>p</sub> 是电子/空穴扩散系数；<i>τ</i><sub>n</sub>、<i>τ</i><sub>p</sub> 是少数载流子寿命；<i>L</i><sub>n</sub>、<i>L</i><sub>p</sub> 是扩散长度。先记住关系：载流子的扩散能力、寿命、结面积与掺杂共同影响 <i>I</i><sub>S</sub>。没有可靠输入时，不能把猜测数值写成实测结果。</p>
+<hr>
+<h1 id="mosfet">第二部分｜MOSFET：栅极如何像电场水闸一样控制沟道</h1>
+<h2 id="1_1">1. 先看结构，再看公式</h2>
+<p>MOSFET 的英文全称是 <strong>Metal–Oxide–Semiconductor Field-Effect Transistor</strong>，中文为金属—氧化物—半导体场效应晶体管。nMOS 的栅极和半导体之间隔着氧化物。栅极电压建立电场，不必直接接触沟道，也能影响半导体表面。</p>
+<p>在 p 型衬底上加足够正的栅压，会吸引电子到表面；当表面电子足够多时，形成连接源极和漏极的 n 型反型沟道。可以把栅极想成“电场水闸”：栅压先建立沟道，漏—源电压再推动载流子通过。</p>
+<p><strong>增强型（enhancement-mode）</strong>表示阈值以下没有强反型沟道。真实器件在阈值下仍可能有亚阈值电流，但本项目基础强反型模型暂不计算。</p>
+<h2 id="2_1">2. 栅氧电容：栅极控制能力的简化刻度</h2>
+<p><strong><i>C</i><sub>ox</sub> = <i>ε</i><sub>ox</sub> / <i>t</i><sub>ox</sub></strong></p>
+<ul>
+<li><i>C</i><sub>ox</sub>：oxide capacitance per unit area（单位面积栅氧电容），F/m²；不是整只器件的总电容。</li>
+<li><i>ε</i><sub>ox</sub>：氧化物介电率，F/m。</li>
+<li><i>t</i><sub>ox</sub>：氧化层厚度，m。</li>
+</ul>
+<p>氧化层越薄、介电率越高，单位面积电容通常越大，栅极与沟道表面电荷的耦合更强。真实器件还会受到栅叠层、界面电荷和量子效应影响。</p>
+<h2 id="3_1">3. 阈值电压：形成强反型沟道的门槛</h2>
+<p>基础关系为：</p>
+<p><strong><i>φ</i><sub>F</sub> = <i>V</i><sub>thermal</sub> × ln(<i>N</i><sub>A</sub> / <i>n</i><sub>i</sub>)</strong></p>
+<p><strong><i>V</i><sub>th</sub> = <i>V</i><sub>FB</sub> + 2<i>φ</i><sub>F</sub> + √(4q <i>ε</i><sub>s</sub> <i>N</i><sub>A</sub> <i>φ</i><sub>F</sub>) / <i>C</i><sub>ox</sub></strong></p>
+<ul>
+<li><i>φ</i><sub>F</sub>：Fermi potential（费米势）的正值定义，单位 V；表示掺杂后费米能级相对本征能级的位置。</li>
+<li><i>V</i><sub>th</sub>：threshold voltage（阈值电压），单位 V；简化模型里形成强反型沟道的门槛。</li>
+<li><i>V</i><sub>FB</sub>：Flat-Band Voltage（平带电压），单位 V；与栅/半导体功函数差、界面电荷等有关。</li>
+<li><i>N</i><sub>A</sub>、<i>n</i><sub>i</sub>、<i>C</i><sub>ox</sub>、<i>ε</i><sub>s</sub>、q 的含义见前文。</li>
+</ul>
+<p>这是源—衬底电压 <i>V</i><sub>SB</sub>=0、长沟道、突变耗尽近似和特定阈值定义下的基础式。它说明阈值受衬底掺杂、氧化层、栅材料和界面等因素影响；真实芯片的阈值还需结合工艺、温度和测量定义。</p>
+<h2 id="4_1">4. 过驱动：栅压超过阈值多少</h2>
+<p><strong><i>V</i><sub>OV</sub> = <i>V</i><sub>GS</sub> − <i>V</i><sub>th</sub></strong></p>
+<ul>
+<li><i>V</i><sub>GS</sub>：Gate-to-Source Voltage（栅—源电压）。</li>
+<li><i>V</i><sub>OV</sub>：overdrive voltage（过驱动电压），表示栅压超过阈值的余量。</li>
+</ul>
+<p><i>V</i><sub>OV</sub>≤0 时，基础强反型模型令沟道电流为零；<i>V</i><sub>OV</sub>&gt;0 时形成沟道，<i>V</i><sub>OV</sub> 越大通常可形成更多反型电荷。这只是模型的截止边界，不表示真实器件在阈值下完全没有电流。</p>
+<h2 id="5">5. 漏极电流：从“像电阻”到“夹断饱和”</h2>
+<p>将几个因素合并：</p>
+<p><strong>β = <i>μ</i><sub>n</sub> × <i>C</i><sub>ox</sub> × (<i>W</i><sub>ch</sub>/<i>L</i><sub>ch</sub>)</strong></p>
+<p>β 汇总电子迁移率、栅氧控制能力和沟道几何。长沟道平方律模型为：</p>
+<ul>
+<li>截止：<i>V</i><sub>OV</sub>≤0 时，<i>I</i><sub>D</sub>=0（仅指本简化模型）。</li>
+<li>线性区/三极区：0≤<i>V</i><sub>DS</sub>≤<i>V</i><sub>OV</sub> 时，<strong><i>I</i><sub>D</sub> = β[<i>V</i><sub>OV</sub>×<i>V</i><sub>DS</sub> − <i>V</i><sub>DS</sub>²/2]</strong>。</li>
+<li>饱和区：<i>V</i><sub>DS</sub>≥<i>V</i><sub>OV</sub>&gt;0 时，<strong><i>I</i><sub>D</sub> = (β/2)<i>V</i><sub>OV</sub>²</strong>。</li>
+</ul>
+<p>参数含义：</p>
+<ul>
+<li><i>I</i><sub>D</sub>：drain current（漏极电流），单位 A。</li>
+<li><i>V</i><sub>DS</sub>：Drain-to-Source Voltage（漏—源电压），单位 V。</li>
+<li><i>μ</i><sub>n</sub>：electron mobility（电子迁移率），单位 m²/(V·s)，描述电子在电场作用下移动的容易程度。</li>
+<li><i>W</i><sub>ch</sub>、<i>L</i><sub>ch</sub>：沟道宽度和长度，单位 m；<i>W</i><sub>ch</sub>/<i>L</i><sub>ch</sub> 是无量纲比值。</li>
+</ul>
+<p>在小 <i>V</i><sub>DS</sub> 下，源漏之间整条沟道都存在，器件像一个由栅压控制的电阻。<i>V</i><sub>DS</sub> 增大到约 <i>V</i><sub>OV</sub> 时，漏端附近反型沟道变薄，发生 <strong>pinch-off（夹断）</strong>，进入理想模型的饱和区。夹断不是击穿；真实器件在饱和区电流仍可能略升，本基础式暂时忽略沟道长度调制。</p>
+<p>本式还忽略短沟道效应、高场迁移率退化、体效应、自热、陷阱和亚阈值电流。平方律适合学习基本趋势，不应直接声称可预测商用器件性能。</p>
+<hr>
+<h1 id="si">第三部分｜参数和 SI 单位：避免差一百万倍</h1>
+<h2 id="1_2">1. 为什么统一单位</h2>
+<p>SI 是 <strong>International System of Units</strong>（国际单位制）。如果后续编程，内部统一用 m、m²、m³、s、K、C、V、A、F/m 等单位。来源资料可保留原始单位，但进入计算前必须显式换算。</p>
+<p>浓度是“每单位体积的数量”，因此体积换算要取倒数：</p>
+<ul>
+<li>1 cm = 10⁻² m；</li>
+<li>1 cm³ = 10⁻⁶ m³；</li>
+<li>所以 1 cm⁻³ = 10⁶ m⁻³；</li>
+<li>例：10¹⁵ cm⁻³ = 10²¹ m⁻³。</li>
+</ul>
+<p>这不是只差 6 倍，而是差 10⁶ 倍。</p>
+<h2 id="2_2">2. 常用单位换算</h2>
+<table>
+<thead>
+<tr>
+<th>来源单位</th>
+<th>统一单位</th>
+<th>换算</th>
+<th>常见量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cm⁻³</td>
+<td>m⁻³</td>
+<td>乘 10⁶</td>
+<td>掺杂浓度、载流子浓度</td>
+</tr>
+<tr>
+<td>cm²/(V·s)</td>
+<td>m²/(V·s)</td>
+<td>乘 10⁻⁴</td>
+<td>迁移率</td>
+</tr>
+<tr>
+<td>cm²/s</td>
+<td>m²/s</td>
+<td>乘 10⁻⁴</td>
+<td>扩散系数</td>
+</tr>
+<tr>
+<td>μm</td>
+<td>m</td>
+<td>乘 10⁻⁶</td>
+<td>沟道和器件长度</td>
+</tr>
+<tr>
+<td>nm</td>
+<td>m</td>
+<td>乘 10⁻⁹</td>
+<td>氧化层厚度</td>
+</tr>
+<tr>
+<td>cm²</td>
+<td>m²</td>
+<td>乘 10⁻⁴</td>
+<td>结面积</td>
+</tr>
+<tr>
+<td>eV</td>
+<td>J</td>
+<td>乘 q，约 1.602×10⁻¹⁹</td>
+<td>带隙能量等</td>
+</tr>
+<tr>
+<td>°C</td>
+<td>K</td>
+<td>加 273.15</td>
+<td>温度</td>
+</tr>
+<tr>
+<td>mV</td>
+<td>V</td>
+<td>乘 10⁻³</td>
+<td>小电压，如热电压</td>
+</tr>
+<tr>
+<td>mA</td>
+<td>A</td>
+<td>乘 10⁻³</td>
+<td>电流</td>
+</tr>
+</tbody>
+</table>
+<p><strong>eV（electronvolt，电子伏特）是能量单位，不是 V（伏特）。</strong> 1 eV 是一个元电荷跨越 1 V 所对应的能量。</p>
+<h2 id="3_2">3. 单位检查像公式的语法检查</h2>
+<ul>
+<li>ln(·) 和 exp(·) 的输入必须无单位。<i>N</i><sub>A</sub>×<i>N</i><sub>D</sub>/<i>n</i><sub>i</sub>² 就是无单位比值。</li>
+<li>根号里面不能是负数；组合单位应和结果单位相符。</li>
+<li><i>V</i><sub>thermal</sub> 和 <i>V</i><sub>th</sub> 不要用同一个变量名；代码中可分别写 <code>v_thermal</code>、<code>vth_mos</code>。</li>
+<li><i>C</i><sub>ox</sub> 的单位是 F/m²；它是“每面积电容”，不是总电容。</li>
+<li>相对介电常数 <i>ε</i><sub>r</sub> 无单位；ε=<i>ε</i><sub>r</sub>×<i>ε</i><sub>0</sub> 才是介电率，单位 F/m。</li>
+<li>理想因子 <i>n</i><sub>d</sub>、相对介电常数 <i>ε</i><sub>r</sub> 和沟道比值 <i>W</i><sub>ch</sub>/<i>L</i><sub>ch</sub> 都无单位。</li>
+</ul>
+<h2 id="4_2">4. 参数有不同来源，不能混成一类</h2>
+<p>后续记录参数时要区分：</p>
+<ul>
+<li><strong>物理常数</strong>：q、<i>k</i><sub>B</sub>、<i>ε</i><sub>0</sub> 等，应追溯到 NIST CODATA 等权威来源。</li>
+<li><strong>材料参考参数</strong>：例如硅介电率、带隙、迁移率模型；软件文档中的数值是模型参考输入，不是芯片实测。</li>
+<li><strong>论文或数据手册参数</strong>：只代表特定论文器件或产品，不可自动推广到所有器件。</li>
+<li><strong>教学假设</strong>：为展示趋势而选的值，必须标明假设，不是实验结果，也不等于本项目已冻结的参数。</li>
+</ul>
+<p>本讲义和配套页面中的滑块只用于说明趋势，不输出实测安培值，不替你选定项目参数，也不执行器件模型。<strong>等你理解这三部分之后，再单独讨论参数冻结。</strong></p>
+<hr>
+<h1 id="_2">术语速查｜英文全称与中文释义</h1>
+<table>
+<thead>
+<tr>
+<th>缩写/术语</th>
+<th>英文全称</th>
+<th>中文释义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PN / p–n junction</td>
+<td>p-type–n-type junction</td>
+<td>p 型与 n 型半导体形成的结；接缝附近形成耗尽区和内建电场。</td>
+</tr>
+<tr>
+<td>MOS</td>
+<td>Metal–Oxide–Semiconductor</td>
+<td>金属—氧化物—半导体叠层，是栅极控制结构的基础。</td>
+</tr>
+<tr>
+<td>MOSFET</td>
+<td>Metal–Oxide–Semiconductor Field-Effect Transistor</td>
+<td>金属—氧化物—半导体场效应晶体管；用栅极电场控制源漏电流。</td>
+</tr>
+<tr>
+<td>nMOS / NMOS</td>
+<td>n-channel Metal–Oxide–Semiconductor Field-Effect Transistor</td>
+<td>n 沟道金属—氧化物—半导体场效应晶体管；沟道主要由电子导电。</td>
+</tr>
+<tr>
+<td>I–V</td>
+<td>Current–Voltage characteristic</td>
+<td>电流—电压特性；观察端口电压改变时电流如何变化。</td>
+</tr>
+<tr>
+<td>SI</td>
+<td>International System of Units</td>
+<td>国际单位制；项目内部计算采用的统一单位体系。</td>
+</tr>
+<tr>
+<td>TE</td>
+<td>Thermal Equilibrium</td>
+<td>热平衡；净流动达到平衡，内部仍可存在电场和载流子运动。</td>
+</tr>
+<tr>
+<td>DA</td>
+<td>Depletion Approximation</td>
+<td>耗尽近似；把耗尽区自由载流子近似为很少，保留固定离化杂质电荷。</td>
+</tr>
+<tr>
+<td>GCA</td>
+<td>Gradual Channel Approximation</td>
+<td>渐变沟道近似；假设沟道电势沿源漏方向缓慢变化，用于推导长沟道电流关系。</td>
+</tr>
+<tr>
+<td><i>V</i><sub>bi</sub></td>
+<td>Built-in potential</td>
+<td>内建电势；PN 结热平衡时内部形成的势垒电压。</td>
+</tr>
+<tr>
+<td><i>W</i><sub>dep</sub></td>
+<td>Depletion-region width</td>
+<td>耗尽区宽度；PN 结中自由载流子明显减少区域的总宽度。</td>
+</tr>
+<tr>
+<td><i>V</i><sub>th</sub></td>
+<td>Threshold voltage</td>
+<td>阈值电压；基础 nMOS 模型中形成强反型沟道的门槛。</td>
+</tr>
+<tr>
+<td><i>V</i><sub>thermal</sub></td>
+<td>Thermal voltage</td>
+<td>热电压；<i>k</i><sub>B</sub>T/q 表示的热能电压刻度，不是阈值电压。</td>
+</tr>
+<tr>
+<td><i>k</i><sub>B</sub></td>
+<td>Boltzmann constant</td>
+<td>玻尔兹曼常数；将绝对温度关联到热能尺度的基本物理常数，单位 J/K。</td>
+</tr>
+<tr>
+<td>T</td>
+<td>Thermodynamic temperature (absolute temperature)</td>
+<td>热力学温度/绝对温度，单位 K；代入热学公式时不能直接用摄氏度数值。</td>
+</tr>
+<tr>
+<td>q</td>
+<td>Elementary charge</td>
+<td>元电荷量的正值大小，单位 C；电子电荷为 −q。</td>
+</tr>
+<tr>
+<td><i>C</i><sub>ox</sub></td>
+<td>Oxide capacitance per unit area</td>
+<td>单位面积栅氧电容；衡量栅极通过氧化层耦合电荷的能力。</td>
+</tr>
+<tr>
+<td><i>V</i><sub>OV</sub></td>
+<td>Overdrive voltage</td>
+<td>过驱动电压；<i>V</i><sub>GS</sub> 超过 <i>V</i><sub>th</sub> 的部分。</td>
+</tr>
+<tr>
+<td><i>I</i><sub>D</sub></td>
+<td>Drain current</td>
+<td>漏极电流；MOSFET 漏源沟道中的电流。</td>
+</tr>
+<tr>
+<td><i>I</i><sub>S</sub></td>
+<td>Reverse saturation current</td>
+<td>反向饱和电流；理想 PN 结方程中的尺度电流。</td>
+</tr>
+<tr>
+<td><i>N</i><sub>A</sub></td>
+<td>Acceptor concentration</td>
+<td>受主浓度；p 型区域受主掺杂的数密度。</td>
+</tr>
+<tr>
+<td><i>N</i><sub>D</sub></td>
+<td>Donor concentration</td>
+<td>施主浓度；n 型区域施主掺杂的数密度。</td>
+</tr>
+<tr>
+<td><i>n</i><sub>i</sub></td>
+<td>Intrinsic carrier concentration</td>
+<td>本征载流子浓度；无掺杂半导体载流子浓度基准。</td>
+</tr>
+<tr>
+<td><i>V</i><sub>GS</sub></td>
+<td>Gate-to-Source Voltage</td>
+<td>栅—源电压；栅极相对源极的电压。</td>
+</tr>
+<tr>
+<td><i>V</i><sub>DS</sub></td>
+<td>Drain-to-Source Voltage</td>
+<td>漏—源电压；漏极相对源极的电压。</td>
+</tr>
+<tr>
+<td><i>μ</i><sub>n</sub></td>
+<td>Electron mobility</td>
+<td>电子迁移率；描述电子在电场作用下移动的容易程度。</td>
+</tr>
+<tr>
+<td><i>V</i><sub>FB</sub></td>
+<td>Flat-Band Voltage</td>
+<td>平带电压；MOS 结构半导体能带近似平直时的栅压。</td>
+</tr>
+<tr>
+<td>eV</td>
+<td>Electronvolt</td>
+<td>电子伏特，能量单位，不能与伏特混淆。</td>
+</tr>
+<tr>
+<td>mV</td>
+<td>millivolt</td>
+<td>毫伏；电压单位，1 mV = 10⁻³ V。</td>
+</tr>
+<tr>
+<td>K</td>
+<td>kelvin</td>
+<td>开尔文；热力学温度单位。</td>
+</tr>
+<tr>
+<td>J</td>
+<td>joule</td>
+<td>焦耳；能量单位。</td>
+</tr>
+<tr>
+<td>C</td>
+<td>coulomb</td>
+<td>库仑；电荷单位。</td>
+</tr>
+<tr>
+<td>V</td>
+<td>volt</td>
+<td>伏特；电势差/电压单位。</td>
+</tr>
+<tr>
+<td>SiC</td>
+<td>Silicon Carbide</td>
+<td>碳化硅；P02 后续功率器件学习的材料背景，本讲义公式仍是硅基础模型。</td>
+</tr>
+<tr>
+<td>TCAD</td>
+<td>Technology Computer-Aided Design</td>
+<td>工艺/器件计算机辅助设计；用数值方法模拟工艺或器件，本项目当前未使用 TCAD。</td>
+</tr>
+<tr>
+<td>COMSOL</td>
+<td>COMSOL Multiphysics</td>
+<td>多物理场有限元仿真软件名称；提及不代表本页面已进行 COMSOL 仿真。</td>
+</tr>
+<tr>
+<td>NIST</td>
+<td>National Institute of Standards and Technology</td>
+<td>美国国家标准与技术研究院；基础物理常数来源之一。</td>
+</tr>
+<tr>
+<td>CODATA</td>
+<td>Committee on Data of the International Science Council</td>
+<td>国际科学理事会数据委员会；推荐的基础物理常数数值来源。</td>
+</tr>
+<tr>
+<td>MIT OCW</td>
+<td>Massachusetts Institute of Technology OpenCourseWare</td>
+<td>麻省理工学院开放课程；本项目半导体基础方程的课程来源。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_3">来源和自测</h2>
+<p>完整方程、符号、单位及来源映射见项目技术底稿：<code>../equation_source_table.md</code>。该表包含 MIT 6.012 OpenCourseWare、NIST CODATA 2022 和 COMSOL 官方半导体材料/模型资料。材料参数和软件示例用于教学参考与单位核对，不是测量数据。</p>
+<p>尝试不计算、只用语言回答：</p>
+<ol>
+<li>PN 结反向偏置时，为什么耗尽区会变宽？</li>
+<li>理想二极管方程中，为什么正向电流会快速增加？</li>
+<li>为什么热电压和 MOSFET 阈值电压不能当成同一个量？</li>
+<li>当 <i>V</i><sub>DS</sub> 增加到 <i>V</i><sub>OV</sub> 附近，长沟道模型中的沟道会发生什么？</li>
+<li>为什么 10¹⁵ cm⁻³ 要乘 10⁶ 才转换为 m⁻³？</li>
+<li>在 <i>V</i><sub>thermal</sub> = <i>k</i><sub>B</sub>·T/q 中，为什么 J/C 的单位会变成 V？温度 T 增大时，热电压如何变化？</li>
+</ol>
+<p>能用自己的话回答后，可打开项目根目录中的 <code><i>model</i><sub>parameters</sub>_v1.md</code> 对照教学输入，再运行 <code>python -m src.<i>run</i><sub>model</sub></code> 观察这些公式怎样生成可复现数据。若概念还不顺，可继续用页面滑块观察趋势；滑块和模型脚本的数值用途不同。</p></main></body>
+</html>

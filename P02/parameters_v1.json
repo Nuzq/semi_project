@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "parameter_set_id": "P02-EDU-V1",
+  "frozen_on": "2026-10-23",
+  "model_scope": "300 K silicon PN-junction diode and long-channel enhancement nMOS analytical teaching models; not a SiC device, TCAD result, COMSOL solution, measurement, or product fit.",
+  "constants": {
+    "elementary_charge_C": 1.602176634e-19,
+    "boltzmann_constant_J_per_K": 1.380649e-23,
+    "vacuum_permittivity_F_per_m": 8.8541878188e-12
+  },
+  "pn_diode": {
+    "temperature_K": 300.0,
+    "silicon_relative_permittivity": 11.7,
+    "acceptor_concentration_cm3": 1e16,
+    "donor_concentration_cm3": 1e15,
+    "intrinsic_concentration_cm3": 1e10,
+    "ideality_factor": 1.0,
+    "reverse_saturation_current_A": 1e-15,
+    "diode_voltage_sweep_V": {
+      "start": -0.2,
+      "stop": 0.8,
+      "points": 501
+    },
+    "applied_junction_voltage_sweep_V": {
+      "start": -0.3,
+      "stop": 0.6,
+      "points": 37
+    }
+  },
+  "nmos": {
+    "temperature_K": 300.0,
+    "silicon_relative_permittivity": 11.7,
+    "oxide_relative_permittivity": 3.9,
+    "oxide_thickness_m": 1e-8,
+    "substrate_acceptor_concentration_cm3": 1e16,
+    "intrinsic_concentration_cm3": 1e10,
+    "flat_band_voltage_V": 0.0,
+    "electron_mobility_cm2_per_Vs": 1448.0,
+    "channel_width_m": 1e-5,
+    "channel_length_m": 1e-6,
+    "gate_voltage_sweep_V": {
+      "start": 0.0,
+      "stop": 3.0,
+      "points": 61
+    },
+    "drain_voltage_sweep_V": {
+      "start": 0.0,
+      "stop": 2.0,
+      "points": 81
+    },
+    "output_curve_gate_voltages_V": [
+      1.0,
+      1.5,
+      2.0,
+      2.5,
+      3.0
+    ],
+    "transfer_curve_drain_voltage_V": 0.1
+  },
+  "provenance": [
+    {
+      "parameter": "constants.elementary_charge_C, constants.boltzmann_constant_J_per_K, constants.vacuum_permittivity_F_per_m",
+      "classification": "official physical constants",
+      "source_id": "P02-T03",
+      "note": "NIST CODATA 2022; epsilon_0 is used with the quoted CODATA value."
+    },
+    {
+      "parameter": "pn_diode.silicon_relative_permittivity, nmos.silicon_relative_permittivity",
+      "classification": "official material reference value",
+      "source_id": "P02-T04",
+      "note": "COMSOL 6.3 silicon material reference; not a measurement of a particular wafer or product."
+    },
+    {
+      "parameter": "nmos.electron_mobility_cm2_per_Vs",
+      "classification": "official model reference value",
+      "source_id": "P02-T04",
+      "note": "COMSOL 6.3 silicon reference mobility at 300 K; used as a simple low-field teaching input, not a calibrated device mobility."
+    },
+    {
+      "parameter": "pn_diode.acceptor_concentration_cm3, pn_diode.donor_concentration_cm3, pn_diode.intrinsic_concentration_cm3, pn_diode.ideality_factor, pn_diode.reverse_saturation_current_A",
+      "classification": "teaching assumptions",
+      "source_id": null,
+      "pedagogical_context_source_id": "P02-T01",
+      "note": "Numerical values are selected for the exercise, not taken from the course or measured, fitted, or attributed to a real device; P02-T01 supports the equation framework only."
+    },
+    {
+      "parameter": "nmos.oxide_relative_permittivity, nmos.oxide_thickness_m, nmos.substrate_acceptor_concentration_cm3, nmos.intrinsic_concentration_cm3, nmos.flat_band_voltage_V, nmos.channel_width_m, nmos.channel_length_m",
+      "classification": "teaching assumptions",
+      "source_id": null,
+      "pedagogical_context_source_id": "P02-T01",
+      "note": "Numerical values are selected to make the capacitance and threshold calculation reproducible, not taken from the course or any process recipe or product geometry; P02-T01 supports the equation framework only."
+    },
+    {
+      "parameter": "all voltage sweep ranges and fixed bias values",
+      "classification": "numerical teaching grid",
+      "source_id": null,
+      "note": "Fixed in this parameter set for plotting and repeatability only; not an externally sourced operating specification."
+    }
+  ]
+}

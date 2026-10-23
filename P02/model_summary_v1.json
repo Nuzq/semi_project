@@ -1,0 +1,41 @@
+{
+  "parameter_set_id": "P02-EDU-V1",
+  "model_scope": "300 K silicon PN-junction diode and long-channel enhancement nMOS analytical teaching models; not a SiC device, TCAD result, COMSOL solution, measurement, or product fit.",
+  "run_date": "2026-10-23",
+  "python_version": "3.12.7",
+  "derived_values": {
+    "pn_thermal_voltage_V": 0.025851999786435535,
+    "pn_built_in_potential_V": 0.654790722655649,
+    "pn_zero_bias_depletion_total_m": 9.651052947882006e-07,
+    "pn_zero_bias_depletion_p_side_m": 8.77368449807455e-08,
+    "pn_zero_bias_depletion_n_side_m": 8.773684498074551e-07,
+    "mos_oxide_capacitance_per_area_F_per_m2": 0.0034531332493319996,
+    "mos_fermi_potential_V": 0.35715857599399026,
+    "mos_threshold_voltage_V": 0.8553335744764575,
+    "mos_overdrive_at_VGS_2V_V": 1.1446664255235426,
+    "mos_drain_current_at_VGS_2V_VDS_1V_A": 0.0032234204114824604,
+    "mos_operating_region_at_VGS_2V_VDS_1V": "linear",
+    "silicon_mobility_m2_per_Vs": 0.1448,
+    "oxide_permittivity_F_per_m": 3.453133249332e-11
+  },
+  "checks": {
+    "thermal_voltage_300K_is_about_25_85mV": true,
+    "built_in_potential_is_positive": true,
+    "depletion_charge_balance": true,
+    "depletion_sweep_stays_below_built_in_potential": true,
+    "mos_threshold_is_positive": true,
+    "mos_base_point_is_above_threshold": true,
+    "all_model_outputs_are_finite": true
+  },
+  "generated_files": [
+    "data/pn_diode_iv_v1.csv",
+    "data/pn_depletion_v1.csv",
+    "data/nmos_output_iv_v1.csv",
+    "data/nmos_transfer_iv_v1.csv",
+    "figures/pn_diode_iv_v1.png",
+    "figures/pn_depletion_v1.png",
+    "figures/nmos_output_iv_v1.png",
+    "figures/nmos_transfer_iv_v1.png"
+  ],
+  "output_class": "analytical_teaching_model_output_not_measurement"
+}
